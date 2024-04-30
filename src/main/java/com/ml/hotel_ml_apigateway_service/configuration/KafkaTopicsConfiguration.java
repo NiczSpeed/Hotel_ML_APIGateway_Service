@@ -6,23 +6,22 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
 
 @Configuration
-public class KafkaConfiguration {
+public class KafkaTopicsConfiguration {
 
     @Bean
     public NewTopic registerTopic(){
         return TopicBuilder.name("register_topic")
-                .partitions(10)
-                .replicas(1)
+                .partitions(12)
+                .replicas(3)
                 .build();
     }
 
     @Bean
     public NewTopic loginTopic(){
         return TopicBuilder.name("login_topic")
-                .partitions(10)
-                .replicas(1)
+                .partitions(12)
+                .replicas(3)
                 .build();
     }
-
 
 }
