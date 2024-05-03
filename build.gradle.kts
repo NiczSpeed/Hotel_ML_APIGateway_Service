@@ -7,6 +7,8 @@ plugins {
 group = "com.ml"
 version = "0.0.1-SNAPSHOT"
 
+val jsonVersion = "20240303"
+
 java {
     sourceCompatibility = JavaVersion.VERSION_21
 }
@@ -36,6 +38,7 @@ dependencies {
 //    implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
 //    implementation("org.springframework.cloud:spring-cloud-starter-task")
 //    implementation("org.springframework.cloud:spring-cloud-starter-zookeeper-discovery")
+    implementation("org.json:json:${jsonVersion}")
     implementation("org.springframework.kafka:spring-kafka")
     compileOnly("org.projectlombok:lombok")
 //    runtimeOnly("org.postgresql:postgresql")

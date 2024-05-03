@@ -1,0 +1,141 @@
+version: '3.8'
+networks:
+  hotel-ml-net:
+    name: hotel-ml-net
+    driver: bridge
+
+services:
+  postgres:
+    container_name: postgres
+    image: 'postgres:16.2'
+    environment:
+      - 'POSTGRES_DB=HotelMLAuthDB'
+      - 'POSTGRES_PASSWORD=secret'
+      - 'POSTGRES_USER=root'
+    ports:
+      - '5432:5432'
+    networks:
+      - hotel-ml-net
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    restart: always
+    networks:
+      - hotel-ml-net
+    environment:
+      PGADMIN_DEFAULT_EMAIL:
+      PGADMIN_DEFAULT_PASSWORD:
+    ports:
+      - "5050:80"
+
+  hotel_ml_apigateway_service:
+    image: hotel_ml_apigateway_service
+    container_name: hotel_ml_apigateway_service
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    networks:
+      - hotel-ml-net
+    ports:
+      - "8081:8081"
+
+  hotel_ml_auth_service:
+    image: hotel_ml_auth_service
+    container_name: hotel_ml_auth_service
+    build:
+      context: ./Hotel_ML_Auth_Service
+      dockerfile: Dockerfile
+    networks:
+      - hotel-ml-net
+    environment:
+      - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+      - spring.jpa.hibernate.ddl-auto=update
+      - spring.datasource.url
+      - spring.datasource.username=
+      - spring.datasource.password=
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    networks:
+      - hotel-ml-net
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker_1:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: broker_1
+    networks:
+      - hotel-ml-net
+    ports:
+      - "8097:8097"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_EXTERNAL:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_EXTERNAL://localhost:8097,PLAINTEXT_INTERNAL://broker_1:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+  broker_2:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: broker_2
+    networks:
+      - hotel-ml-net
+    ports:
+      - "8098:8098"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_EXTERNAL:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_EXTERNAL://localhost:8098,PLAINTEXT_INTERNAL://broker_2:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+  broker_3:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: broker_3
+    networks:
+      - hotel-ml-net
+    ports:
+      - "8099:8099"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_EXTERNAL:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_EXTERNAL://localhost:8099,PLAINTEXT_INTERNAL://broker_3:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    container_name: kafdrop
+    restart: "no"
+    networks:
+      - hotel-ml-net
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: broker_1:29092 broker_2:29092 broker_3:29092
+    depends_on:
+      - broker_1
+      - broker_2
+      - broker_3
