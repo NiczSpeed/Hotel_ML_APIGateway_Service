@@ -8,6 +8,7 @@ group = "com.ml"
 version = "0.0.1-SNAPSHOT"
 
 val jsonVersion = "20240303"
+val jwtVersion = "0.12.5"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -27,7 +28,7 @@ extra["springCloudVersion"] = "2023.0.1"
 
 dependencies {
 //    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-//    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")
 //    implementation("org.apache.kafka:kafka-streams")
 //    implementation("org.springframework.cloud:spring-cloud-function-web")
@@ -39,6 +40,9 @@ dependencies {
 //    implementation("org.springframework.cloud:spring-cloud-starter-task")
 //    implementation("org.springframework.cloud:spring-cloud-starter-zookeeper-discovery")
     implementation("org.json:json:${jsonVersion}")
+    implementation("io.jsonwebtoken:jjwt-api:${jwtVersion}")
+    implementation("io.jsonwebtoken:jjwt-impl:${jwtVersion}")
+    implementation("io.jsonwebtoken:jjwt-jackson:${jwtVersion}")
     implementation("org.springframework.kafka:spring-kafka")
     compileOnly("org.projectlombok:lombok")
 //    runtimeOnly("org.postgresql:postgresql")

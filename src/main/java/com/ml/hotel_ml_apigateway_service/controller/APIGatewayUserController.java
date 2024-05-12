@@ -8,13 +8,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/")
-public class APIGatewayController {
+@RequestMapping("/user")
+public class APIGatewayUserController {
 
     private final APIGatewayProducerService apiGatewayService;
 
     @Autowired
-    public APIGatewayController(APIGatewayProducerService apiGatewayService) {
+    public APIGatewayUserController(APIGatewayProducerService apiGatewayService) {
         this.apiGatewayService = apiGatewayService;
     }
 
@@ -29,13 +29,8 @@ public class APIGatewayController {
         return new ResponseEntity<>(apiGatewayService.loginUserMessage(message), HttpStatus.OK);
     }
 
-    @GetMapping("/")
+    @GetMapping("/info")
     public String welcomeEndpoint(){
-        return "Welcome to Ml ApiGateWay Service";
+        return "Welcome to Ml ApiGateWay Service, ur role is USER!";
     }
-
-
-
-
-
 }
