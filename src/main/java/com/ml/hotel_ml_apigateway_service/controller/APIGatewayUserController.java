@@ -26,7 +26,11 @@ public class APIGatewayUserController {
 
     @PostMapping("/login")
     public ResponseEntity<String> loginUser(@RequestBody String message) {
-        return new ResponseEntity<>(apiGatewayService.loginUserMessage(message), HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(apiGatewayService.loginUserMessage(message), HttpStatus.OK);
+        }catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     @GetMapping("/info")
