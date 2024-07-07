@@ -27,6 +27,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/user/login").permitAll()
                         .requestMatchers("/user/register").permitAll()
                         .requestMatchers("/admin/info").permitAll()
+                        .requestMatchers("/user/info").permitAll()
                         .anyRequest().authenticated())
 
                 .httpBasic(Customizer.withDefaults())

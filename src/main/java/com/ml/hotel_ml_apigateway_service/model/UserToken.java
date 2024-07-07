@@ -3,7 +3,10 @@ package com.ml.hotel_ml_apigateway_service.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.UUID;
 
 @Entity
@@ -22,6 +25,8 @@ public class UserToken {
     private String email;
     @Column(name = "token")
     private String token;
-    @Column(name = "expiration_date")
-    private LocalDate expirationDate;
+    @Column(name = "expiry_date")
+    private Date expiryDate;
+    @Column(name = "roles")
+    private String roles;
 }

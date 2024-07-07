@@ -1,5 +1,6 @@
 package com.ml.hotel_ml_apigateway_service.service;
 
+import ch.qos.logback.core.subst.Token;
 import com.ml.hotel_ml_apigateway_service.dto.UserTokenDto;
 import com.ml.hotel_ml_apigateway_service.repository.UserTokenRepository;
 import io.jsonwebtoken.Claims;
@@ -7,11 +8,20 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
+import io.micrometer.observation.GlobalObservationConvention;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Array;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+import java.util.List;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 import javax.crypto.SecretKey;
 import java.time.ZoneId;
@@ -45,12 +55,16 @@ public class APIGatewayConsumerService {
             token.setToken(message);
             Claims claims = Jwts.parser().verifyWith(getSecretKey()).build().parseSignedClaims(message).getPayload();
             token.setEmail(claims.getSubject());
-            token.setExpiryDate(claims.getExpiration().toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+            token.setRoles(claims.get("roles", List.class).toString());
+            token.setExpiryDate(claims.getExpiration());
 
             logger.info("Token: " + token.getToken());
-
+            logger.info("Email: " + token.getEmail());
+            logger.info("Roles: " + token.getRoles());
+            logger.info("ExpiryDate: " + token.getExpiryDate());
 
             userTokenRepository.save(Instance.mapUserTokenDtoToUserToken(token));
+
         }catch (Exception e){
             logger.info("Invalid Data");
         }

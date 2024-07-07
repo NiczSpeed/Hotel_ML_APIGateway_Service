@@ -5,6 +5,8 @@ import com.ml.hotel_ml_apigateway_service.model.UserToken;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
+import java.util.List;
+
 @Mapper
 public interface UserTokenMapper {
 
@@ -12,5 +14,7 @@ public interface UserTokenMapper {
 
     UserTokenDto mapUserTokenToUserTokenDto(UserToken userToken);
     UserToken mapUserTokenDtoToUserToken(UserTokenDto userTokenDto);
+    List<UserTokenDto> mapUserTokenListToUserTokenDtoList(List<UserToken> userTokenList);
+    List<UserToken> mapUserTokenDtoListToUserTokenList(List<UserTokenDto> userTokenDtoList);
 
 }
