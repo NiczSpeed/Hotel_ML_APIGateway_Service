@@ -26,14 +26,29 @@ public class SecurityConfiguration {
 //                         .requestMatchers("auth/admin/**").hasRole("ADMIN")
                         .requestMatchers("/user/login").permitAll()
                         .requestMatchers("/user/register").permitAll()
-                        .requestMatchers("/admin/info").permitAll()
                         .requestMatchers("/user/info").permitAll()
+//                        .requestMatchers("/admin/info").hasRole("ADMIN")
+                        .requestMatchers("/admin/info").permitAll()
                         .anyRequest().authenticated())
 
+
                 .httpBasic(Customizer.withDefaults())
+
+//                .httpBasic(Customizer.withDefaults()).formLogin(formLogin -> formLogin
+//                        .loginPage("/login")
+//                        .permitAll()
+//                )
+
+//                .httpBasic(Customizer.withDefaults()).logout(logout -> logout
+//                        .logoutUrl("/logout")
+//                        .addLogoutHandler(new SecurityContextLogoutHandler()))
+
+
+
                 .csrf(AbstractHttpConfigurer::disable)
                 .build();
     }
+
 
     @Bean
     public FilterRegistrationBean jwtFilter() {
@@ -42,7 +57,7 @@ public class SecurityConfiguration {
         // provide endpoints which needs to be restricted.
         // All Endpoints would be restricted if unspecified
         filter.addUrlPatterns("/user/info");
-        filter.addUrlPatterns("/admin/**");
+        filter.addUrlPatterns("/admin/info");
         return filter;
     }
 
