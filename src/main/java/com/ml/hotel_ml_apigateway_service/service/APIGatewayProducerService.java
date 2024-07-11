@@ -36,7 +36,7 @@ public class APIGatewayProducerService {
         String messageWithId = attachMessageId(message, messageId);
         kafkaTemplate.send("register_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
         try {
-            String response = responseFuture.get(10, TimeUnit.SECONDS);
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             logger.info(response);
             if (response.contains("User already Exist!")) {
@@ -64,18 +64,17 @@ public class APIGatewayProducerService {
         }
     }
 
-
-    @KafkaListener(topics = "error_request_topic_register", groupId = "hotel_ml_apigateway_service")
-    public void registerError(String message) {
-        String messageId = extractMessageId(message);
-        CompletableFuture<String> responseFuture = responseFutures.get(messageId);
-        if (responseFuture != null) {
-            responseFuture.complete(message);
-        }
+    @KafkaListener(topics = "error_request_topic", groupId = "hotel_ml_apigateway_service")
+    private void registerError(String message) {
+        getRequestMessage(message);
     }
 
-    @KafkaListener(topics = "success_request_topic_register", groupId = "hotel_ml_apigateway_service")
-    public void registerSuccess(String message) {
+    @KafkaListener(topics = "success_request_topic", groupId = "hotel_ml_apigateway_service")
+    private void registerSuccess(String message) {
+        getRequestMessage(message);
+    }
+
+    private void getRequestMessage(String message) {
         String messageId = extractMessageId(message);
         CompletableFuture<String> responseFuture = responseFutures.get(messageId);
         if (responseFuture != null) {
