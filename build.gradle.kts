@@ -39,7 +39,6 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-jackson:${jwtVersion}")
     implementation("org.mapstruct:mapstruct:${mapstructVersion}")
     implementation("org.springframework.kafka:spring-kafka")
-    implementation("org.springframework.session:spring-session-data-redis")
     compileOnly("org.projectlombok:lombok")
     runtimeOnly("org.postgresql:postgresql")
     annotationProcessor("org.projectlombok:lombok")

@@ -1,7 +1,6 @@
 package com.ml.hotel_ml_apigateway_service.service;
 
 
-
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -10,9 +9,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
 import java.util.Base64;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -52,22 +49,6 @@ public class APIGatewayProducerService {
             return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
-//    public String loginUserMessage(String message) {
-//        try {
-//            CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send("login_topic", Base64.getEncoder().encodeToString(message.getBytes()));
-//            future.whenComplete((result, exception) -> {
-//                if (exception != null) logger.severe(exception.getMessage());
-//                else logger.info("Message sent successfully");
-//            });
-//
-//            return message;
-//
-//        } catch (Exception e) {
-//            return null;
-//        }
-//    }
 
     public ResponseEntity<String> loginUserMessage(String message) {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
@@ -109,7 +90,6 @@ public class APIGatewayProducerService {
         byte[] decodedBytes = Base64.getDecoder().decode(message);
         return new String(decodedBytes);
     }
-
 
 
     private void getRequestMessage(String message) {
