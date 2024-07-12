@@ -1,5 +1,7 @@
 package com.ml.hotel_ml_apigateway_service.configuration;
 
+import com.ml.hotel_ml_apigateway_service.model.DeprecatedToken;
+import com.ml.hotel_ml_apigateway_service.repository.DeprecatedTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -8,6 +10,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,6 +32,9 @@ public class JwtFilter extends OncePerRequestFilter {
     //    @Value("${security.jwt.secret.key}")
     private String secretKey = "bUl4RGJBRm11VVlTdlZTeDRhM0pQdlBmODJCcHpxN0NtSXhEYkFGbXVVWVN2VlN4NGEzSlB2UGY4MkJwenE3Qw==";
 
+    @Autowired
+    private DeprecatedTokenRepository decryptedTokenRepository;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
@@ -40,6 +46,11 @@ public class JwtFilter extends OncePerRequestFilter {
         }
         try {
             String token = header.substring(7);
+            if (checkIfTokenIsDeprecated(token)) {
+                logger.info("JWT Token cannot be found!");
+                filterChain.doFilter(request, response);
+                return;
+            }
             String username = extractUsername(token);
             List<String> roles = extractRoles(token);
             List<SimpleGrantedAuthority> authorities = roles
@@ -56,7 +67,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
 
-        }catch (Exception e) {
+        } catch (Exception e) {
             logger.info("JWT token could not be verified");
         }
         filterChain.doFilter(request, response);
@@ -78,6 +89,15 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private List<String> extractRoles(String token) {
         return extractAllClaims(token).get("roles", List.class);
+    }
+
+    private boolean checkIfTokenIsDeprecated(String token) {
+        for (DeprecatedToken deprecatedToken : decryptedTokenRepository.findAll()) {
+            if (deprecatedToken.getToken().equals(token)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 

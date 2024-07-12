@@ -2,6 +2,11 @@ package com.ml.hotel_ml_apigateway_service.controller;
 
 import com.ml.hotel_ml_apigateway_service.service.APIGatewayConsumerService;
 import com.ml.hotel_ml_apigateway_service.service.APIGatewayProducerService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletRequestWrapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -32,14 +37,19 @@ public class APIGatewayUserController {
         return apiGatewayProducerService.loginUserMessage(message);
     }
 
+    @GetMapping("/logout")
+    public ResponseEntity<String> logoutUser(HttpServletRequest request) {
+        return apiGatewayProducerService.logoutUser(request);
+    }
+
     @GetMapping("/info")
-    public String welcomeEndpoint(){
+    public String welcomeEndpoint() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return "Welcome to Ml ApiGateWay Service: " + authentication.getName();
     }
 
     @GetMapping("/details")
-    public ResponseEntity<String> userDetails(){
+    public ResponseEntity<String> userDetails() {
         return apiGatewayProducerService.getUserDetails();
     }
 }

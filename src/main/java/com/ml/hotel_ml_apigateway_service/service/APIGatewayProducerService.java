@@ -1,6 +1,10 @@
 package com.ml.hotel_ml_apigateway_service.service;
 
 
+import com.ml.hotel_ml_apigateway_service.dto.DeprecatedTokenDto;
+import com.ml.hotel_ml_apigateway_service.mapper.DeprecatedTokenMapper;
+import com.ml.hotel_ml_apigateway_service.repository.DeprecatedTokenRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -28,8 +32,12 @@ public class APIGatewayProducerService {
 
     Logger logger = Logger.getLogger(getClass().getName());
 
-    public APIGatewayProducerService(@Qualifier("kafkaTemplate") KafkaTemplate kafkaTemplate) {
+    private final DeprecatedTokenRepository deprecatedTokenRepository;
+
+
+    public APIGatewayProducerService(@Qualifier("kafkaTemplate") KafkaTemplate kafkaTemplate, DeprecatedTokenRepository deprecatedTokenRepository) {
         this.kafkaTemplate = kafkaTemplate;
+        this.deprecatedTokenRepository = deprecatedTokenRepository;
     }
 
     public ResponseEntity<String> registerUserMessage(String message) {
@@ -68,6 +76,23 @@ public class APIGatewayProducerService {
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    public ResponseEntity<String> logoutUser(HttpServletRequest request){
+        try {
+            if (SecurityContextHolder.getContext().getAuthentication() != null) {
+                String header = request.getHeader("Authorization");
+                String token = header.substring(7);
+                DeprecatedTokenDto tokenDto = new DeprecatedTokenDto();
+                tokenDto.setToken(token);
+                deprecatedTokenRepository.saveAndFlush(DeprecatedTokenMapper.Instance.mapDeprecatedTokenToDeprecatedTokenDto(tokenDto));
+                return new ResponseEntity<>("Successful logout!", HttpStatus.OK);
+            }
+            return new ResponseEntity<>("You are not logged in!", HttpStatus.UNAUTHORIZED);
+        }catch (Exception e){
+            return new ResponseEntity<>("Authorization header not found!", HttpStatus.BAD_REQUEST);
+        }
+
     }
 
     public ResponseEntity<String> getUserDetails() {
