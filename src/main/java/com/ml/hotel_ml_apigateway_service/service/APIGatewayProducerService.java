@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;
@@ -69,6 +70,27 @@ public class APIGatewayProducerService {
         }
     }
 
+    public ResponseEntity<String> getUserDetails() {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        String message = "{email:" + getAuthenticatedUser() + "}";
+        String messageId = UUID.randomUUID().toString();
+        responseFutures.put(messageId, responseFuture);
+        String messageWithId = attachMessageId(message, messageId);
+        kafkaTemplate.send("user_details_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        try {
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+            response = new StringBuilder(removeMessageIdFromMessage(response)).reverse().delete(0, 2).reverse().toString().replaceAll("\\\\", "");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private String getAuthenticatedUser() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
+    }
+
 
     @KafkaListener(topics = "error_request_topic", groupId = "hotel_ml_apigateway_service")
     private void registerError(String message) {
@@ -85,12 +107,16 @@ public class APIGatewayProducerService {
         getRequestMessage(decodeMessage(message));
     }
 
+    @KafkaListener(topics = "user_details_request_topic", groupId = "hotel_ml_apigateway_service")
+    public void earnUserDetails(String message) {
+        getRequestMessage(decodeMessage(message));
+    }
+
 
     private String decodeMessage(String message) {
         byte[] decodedBytes = Base64.getDecoder().decode(message);
         return new String(decodedBytes);
     }
-
 
     private void getRequestMessage(String message) {
         String messageId = extractMessageId(message);
@@ -110,5 +136,10 @@ public class APIGatewayProducerService {
         JSONObject json = new JSONObject(message);
         return json.optString("messageId");
     }
+
+    private String removeMessageIdFromMessage(String message) {
+        return new StringBuilder(message).delete(1, 65).toString();
+    }
+
 
 }
