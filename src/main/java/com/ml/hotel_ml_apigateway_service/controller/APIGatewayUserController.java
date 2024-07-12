@@ -24,17 +24,22 @@ public class APIGatewayUserController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody String message) {
+    public ResponseEntity<String> registerUser(@RequestBody String message) {
         return apiGatewayProducerService.registerUserMessage(message);
     }
 
+//    @PostMapping("/login")
+//    public ResponseEntity<String> loginUser(@RequestBody String message) {
+//        try {
+//            return new ResponseEntity<>(apiGatewayProducerService.loginUserMessage(message), HttpStatus.OK);
+//        }catch (Exception e) {
+//            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+//        }
+//    }
+
     @PostMapping("/login")
     public ResponseEntity<String> loginUser(@RequestBody String message) {
-        try {
-            return new ResponseEntity<>(apiGatewayProducerService.loginUserMessage(message), HttpStatus.OK);
-        }catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
+        return apiGatewayProducerService.loginUserMessage(message);
     }
 
     @GetMapping("/info")

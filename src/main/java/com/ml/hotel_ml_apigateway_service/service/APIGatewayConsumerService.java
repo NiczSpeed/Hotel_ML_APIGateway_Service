@@ -1,7 +1,6 @@
 package com.ml.hotel_ml_apigateway_service.service;
 
-import com.ml.hotel_ml_apigateway_service.dto.UserTokenDto;
-import com.ml.hotel_ml_apigateway_service.repository.UserTokenRepository;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -16,7 +15,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static com.ml.hotel_ml_apigateway_service.mapper.UserTokenMapper.Instance;
+
 
 @Service
 public class APIGatewayConsumerService {
@@ -25,34 +24,31 @@ public class APIGatewayConsumerService {
 
     private final KafkaTemplate kafkaTemplate;
 
-    private final UserTokenRepository userTokenRepository;
-
     Logger logger = Logger.getLogger(getClass().getName());
 
     @Autowired
-    public APIGatewayConsumerService(KafkaTemplate kafkaTemplate, UserTokenRepository userTokenRepository) {
+    public APIGatewayConsumerService(KafkaTemplate kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
-        this.userTokenRepository = userTokenRepository;
     }
 
-    @KafkaListener(topics = "jwt_topic", groupId = "hotel_ml_apigateway_service")
-    public void earnJwtToken(String message){
-        try {
-            byte[] decodedBytes = Base64.getDecoder().decode(message);
-            message = new String(decodedBytes);
-            UserTokenDto token = new UserTokenDto();
-            token.setToken(message);
-            Claims claims = Jwts.parser().verifyWith(getSecretKey()).build().parseSignedClaims(message).getPayload();
-            token.setEmail(claims.getSubject());
-            token.setRoles(claims.get("roles", List.class).toString());
-            token.setExpiryDate(claims.getExpiration());
-
-            userTokenRepository.save(Instance.mapUserTokenDtoToUserToken(token));
-
-        }catch (Exception e){
-            logger.info("Invalid Data");
-        }
-    }
+//    @KafkaListener(topics = "jwt_topic", groupId = "hotel_ml_apigateway_service")
+//    public void earnJwtToken(String message){
+//        try {
+//            byte[] decodedBytes = Base64.getDecoder().decode(message);
+//            message = new String(decodedBytes);
+//            UserTokenDto token = new UserTokenDto();
+//            token.setToken(message);
+//            Claims claims = Jwts.parser().verifyWith(getSecretKey()).build().parseSignedClaims(message).getPayload();
+//            token.setEmail(claims.getSubject());
+//            token.setRoles(claims.get("roles", List.class).toString());
+//            token.setExpiryDate(claims.getExpiration());
+//
+//            userTokenRepository.save(Instance.mapUserTokenDtoToUserToken(token));
+//
+//        }catch (Exception e){
+//            logger.info("Invalid Data");
+//        }
+//    }
 
 
 
