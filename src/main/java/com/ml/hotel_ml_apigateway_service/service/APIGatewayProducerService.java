@@ -51,7 +51,7 @@ public class APIGatewayProducerService {
             responseFutures.remove(messageId);
             logger.info(response);
             if (response.contains("User already Exist!")) {
-                return new ResponseEntity<>("User already exist!", HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
             return new ResponseEntity<>(message, HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
@@ -70,7 +70,7 @@ public class APIGatewayProducerService {
             responseFutures.remove(messageId);
             logger.info(response);
             if (response.contains("Invalid username or password!")) {
-                return new ResponseEntity<>("Invalid username or password!", HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {

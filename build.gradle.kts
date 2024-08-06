@@ -11,6 +11,8 @@ version = "0.0.1-SNAPSHOT"
 val jsonVersion = "20240303"
 val jwtVersion = "0.12.5"
 val mapstructVersion = "1.5.5.Final"
+val springSecurityVersion = "6.3.1"
+val springStarterWebVersion = "3.3.2"
 
 
 java {
@@ -32,7 +34,8 @@ extra["springCloudVersion"] = "2023.0.1"
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.security:spring-security-core:${springSecurityVersion}")
+    implementation("org.springframework.boot:spring-boot-starter-web:${springStarterWebVersion}")
     implementation("org.json:json:${jsonVersion}")
     implementation("io.jsonwebtoken:jjwt-api:${jwtVersion}")
     implementation("io.jsonwebtoken:jjwt-impl:${jwtVersion}")

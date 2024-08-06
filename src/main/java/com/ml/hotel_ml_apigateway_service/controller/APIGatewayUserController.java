@@ -2,11 +2,7 @@ package com.ml.hotel_ml_apigateway_service.controller;
 
 import com.ml.hotel_ml_apigateway_service.service.APIGatewayConsumerService;
 import com.ml.hotel_ml_apigateway_service.service.APIGatewayProducerService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
