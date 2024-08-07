@@ -16,7 +16,7 @@ public class DeprecatedTokenService {
         this.deprecatedTokenRepository = deprecatedTokenRepository;
     }
 
-    @Scheduled(cron = "0 * /24 * * *")
+    @Scheduled(cron = "0 1 * * * *")
     @Transactional
     protected void removeDeprecatedTokens() {
         deprecatedTokenRepository.deleteAll();
