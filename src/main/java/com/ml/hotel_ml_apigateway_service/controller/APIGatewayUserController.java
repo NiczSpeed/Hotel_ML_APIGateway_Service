@@ -1,6 +1,5 @@
 package com.ml.hotel_ml_apigateway_service.controller;
 
-import com.ml.hotel_ml_apigateway_service.service.APIGatewayConsumerService;
 import com.ml.hotel_ml_apigateway_service.service.APIGatewayProducerService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,7 @@ public class APIGatewayUserController {
     Logger logger = Logger.getLogger(getClass().getName());
 
     @Autowired
-    public APIGatewayUserController(APIGatewayProducerService apiGatewayService, APIGatewayConsumerService apiGatewayConsumerService) {
+    public APIGatewayUserController(APIGatewayProducerService apiGatewayService) {
         this.apiGatewayProducerService = apiGatewayService;
     }
 

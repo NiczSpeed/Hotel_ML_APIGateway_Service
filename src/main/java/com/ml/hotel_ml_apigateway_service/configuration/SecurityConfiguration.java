@@ -30,26 +30,12 @@ public class SecurityConfiguration {
                         .requestMatchers("/user/register").permitAll()
                         .requestMatchers("/user/info").hasRole("USER")
                         .requestMatchers("/admin/info").hasRole("ADMIN")
-
+                        .requestMatchers("/hotel/create").hasRole("ADMIN")
+                        .requestMatchers("/room/create").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-
-
-
                 .httpBasic(Customizer.withDefaults())
-
-
-//                .httpBasic(Customizer.withDefaults()).formLogin(formLogin -> formLogin
-//                        .loginPage("/login")
-//                        .permitAll()
-//                )
-
-//                .httpBasic(Customizer.withDefaults()).logout(logout -> logout
-//                        .logoutUrl("/logout")
-//                        .addLogoutHandler(new SecurityContextLogoutHandler()))
-
-
                 .csrf(AbstractHttpConfigurer::disable)
                 .build();
     }

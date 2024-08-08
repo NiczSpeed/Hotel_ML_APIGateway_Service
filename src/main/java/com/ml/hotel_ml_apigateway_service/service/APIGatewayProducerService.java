@@ -112,6 +112,44 @@ public class APIGatewayProducerService {
         }
     }
 
+    public ResponseEntity<String> createHotelMessage(String message) {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        String messageId = UUID.randomUUID().toString();
+        responseFutures.put(messageId, responseFuture);
+        String messageWithId = attachMessageId(message, messageId);
+        kafkaTemplate.send("create_hotel_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        try {
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+            logger.info(response);
+            if (response.contains("Hotel with this options can not be created!")) {
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            }
+            return new ResponseEntity<>(message, HttpStatus.CREATED);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            return new ResponseEntity<>("Timeout or Error while adding new hotel!", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<String> createRoomMessage(String message) {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        String messageId = UUID.randomUUID().toString();
+        responseFutures.put(messageId, responseFuture);
+        String messageWithId = attachMessageId(message, messageId);
+        kafkaTemplate.send("create_room_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        try {
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+            logger.info(response);
+            if (response.contains("Room with this options can not be created!")) {
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            }
+            return new ResponseEntity<>(message, HttpStatus.CREATED);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private String getAuthenticatedUser() {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
@@ -138,12 +176,12 @@ public class APIGatewayProducerService {
     }
 
 
-    private String decodeMessage(String message) {
+    String decodeMessage(String message) {
         byte[] decodedBytes = Base64.getDecoder().decode(message);
         return new String(decodedBytes);
     }
 
-    private void getRequestMessage(String message) {
+    void getRequestMessage(String message) {
         String messageId = extractMessageId(message);
         CompletableFuture<String> responseFuture = responseFutures.get(messageId);
         if (responseFuture != null) {
@@ -151,18 +189,18 @@ public class APIGatewayProducerService {
         }
     }
 
-    private String attachMessageId(String message, String messageId) {
+    String attachMessageId(String message, String messageId) {
         JSONObject json = new JSONObject(message);
         json.put("messageId", messageId);
         return json.toString();
     }
 
-    private String extractMessageId(String message) {
+    String extractMessageId(String message) {
         JSONObject json = new JSONObject(message);
         return json.optString("messageId");
     }
 
-    private String removeMessageIdFromMessage(String message) {
+   String removeMessageIdFromMessage(String message) {
         return new StringBuilder(message).delete(1, 65).toString();
     }
 
