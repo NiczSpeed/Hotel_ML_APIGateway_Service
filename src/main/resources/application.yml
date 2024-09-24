@@ -1,8 +1,0 @@
-#spring:
-#  cloud:
-#    gateway:
-#      routes:
-#        - id: Hotel_ML_Auth_Service
-#          uri: https://localhost:8080
-#          predicates:
-#            - Path=/auth/**

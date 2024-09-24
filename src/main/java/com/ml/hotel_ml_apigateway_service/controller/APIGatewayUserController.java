@@ -1,36 +1,50 @@
 package com.ml.hotel_ml_apigateway_service.controller;
 
 import com.ml.hotel_ml_apigateway_service.service.APIGatewayProducerService;
-import org.json.JSONObject;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/user")
 public class APIGatewayUserController {
 
-    private final APIGatewayProducerService apiGatewayService;
+    private final APIGatewayProducerService apiGatewayProducerService;
+    Logger logger = Logger.getLogger(getClass().getName());
 
     @Autowired
     public APIGatewayUserController(APIGatewayProducerService apiGatewayService) {
-        this.apiGatewayService = apiGatewayService;
+        this.apiGatewayProducerService = apiGatewayService;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody String message) {
-        JSONObject json = apiGatewayService.registerUserMessage(message);
-        return new ResponseEntity<>(json.toString(), HttpStatus.CREATED);
+    public ResponseEntity<String> registerUser(@RequestBody String message) {
+        return apiGatewayProducerService.registerUserMessage(message);
     }
 
     @PostMapping("/login")
     public ResponseEntity<String> loginUser(@RequestBody String message) {
-        return new ResponseEntity<>(apiGatewayService.loginUserMessage(message), HttpStatus.OK);
+        return apiGatewayProducerService.loginUserMessage(message);
+    }
+
+    @GetMapping("/logout")
+    public ResponseEntity<String> logoutUser(HttpServletRequest request) {
+        return apiGatewayProducerService.logoutUser(request);
     }
 
     @GetMapping("/info")
-    public String welcomeEndpoint(){
-        return "Welcome to Ml ApiGateWay Service, ur role is USER!";
+    public String welcomeEndpoint() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return "Welcome to Ml ApiGateWay Service: " + authentication.getName();
+    }
+
+    @GetMapping("/details")
+    public ResponseEntity<String> userDetails() {
+        return apiGatewayProducerService.getUserDetails();
     }
 }
