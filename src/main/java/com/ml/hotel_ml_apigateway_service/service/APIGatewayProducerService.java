@@ -11,9 +11,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
@@ -45,6 +47,11 @@ public class APIGatewayProducerService {
         String messageId = UUID.randomUUID().toString();
         responseFutures.put(messageId, responseFuture);
         String messageWithId = attachMessageId(message, messageId);
+        JSONObject json = new JSONObject(message);
+        String email = json.getString("email");
+        if(!email.contains("@")){
+            return new ResponseEntity<>(validateFieldsFromJson(json, "Something is wrong with email address!", messageId), HttpStatus.BAD_REQUEST);
+        }
         kafkaTemplate.send("register_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
@@ -78,7 +85,7 @@ public class APIGatewayProducerService {
         }
     }
 
-    public ResponseEntity<String> logoutUser(HttpServletRequest request){
+    public ResponseEntity<String> logoutUser(HttpServletRequest request) {
         try {
             if (SecurityContextHolder.getContext().getAuthentication() != null) {
                 String header = request.getHeader("Authorization");
@@ -89,7 +96,7 @@ public class APIGatewayProducerService {
                 return new ResponseEntity<>("Successful logout!", HttpStatus.OK);
             }
             return new ResponseEntity<>("You are not logged in!", HttpStatus.UNAUTHORIZED);
-        }catch (Exception e){
+        } catch (Exception e) {
             return new ResponseEntity<>("Authorization header not found!", HttpStatus.BAD_REQUEST);
         }
 
@@ -122,7 +129,8 @@ public class APIGatewayProducerService {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             logger.info(response);
-            if (response.contains("Hotel with this options can not be created!")) {
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
             return new ResponseEntity<>(message, HttpStatus.CREATED);
@@ -141,12 +149,68 @@ public class APIGatewayProducerService {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             logger.info(response);
-            if (response.contains("Room with this options can not be created!")) {
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
             return new ResponseEntity<>(message, HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<String> createReservationMessage(String message) {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        String messageId = UUID.randomUUID().toString();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        JSONObject json = new JSONObject(message);
+        json.put("clientEmail", authentication.getName());
+        responseFutures.put(messageId, responseFuture);
+        String messageWithId = attachMessageId(json.toString(), messageId);
+        kafkaTemplate.send("create_reservation_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        try {
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+            logger.info(response);
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            }
+            return new ResponseEntity<>(message, HttpStatus.CREATED);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<String> getFreeHotelsSet(String message) {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        String messageId = UUID.randomUUID().toString();
+        responseFutures.put(messageId, responseFuture);
+        String messageWithId = attachMessageId(message, messageId);
+        JSONObject json = new JSONObject(message);
+
+        LocalDate startDate = LocalDate.parse(json.optString("startDate"));
+        LocalDate endDate = LocalDate.parse(json.optString("endDate"));
+        if (startDate.isAfter(endDate)) {
+            return new ResponseEntity<>(validateFieldsFromJson(json, "Starting date can't be after ending date!", messageId), HttpStatus.BAD_REQUEST);
+        }
+
+        kafkaTemplate.send("request_free_hotels", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        try {
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            } else {
+                response = removeMessageIdFromMessage(response);
+                response = new StringBuilder(response).delete((response.length() - 4 ) ,response.length()-1).toString().replaceAll("\\\\", "");
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
+
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -175,6 +239,12 @@ public class APIGatewayProducerService {
         getRequestMessage(decodeMessage(message));
     }
 
+    @KafkaListener(topics = "response_free_hotels", groupId = "hotel_ml_apigateway_service")
+    public void earnFreeHotelsSet(String message) {
+        logger.severe(message);
+        getRequestMessage(decodeMessage(message));
+    }
+
 
     String decodeMessage(String message) {
         byte[] decodedBytes = Base64.getDecoder().decode(message);
@@ -200,8 +270,15 @@ public class APIGatewayProducerService {
         return json.optString("messageId");
     }
 
-   String removeMessageIdFromMessage(String message) {
+    String removeMessageIdFromMessage(String message) {
         return new StringBuilder(message).delete(1, 65).toString();
+    }
+
+    String validateFieldsFromJson(JSONObject json, String message, String messageId) {
+        json.clear();
+        json.put("messageId", messageId);
+        json.put("message", message);
+        return json.toString();
     }
 
 
