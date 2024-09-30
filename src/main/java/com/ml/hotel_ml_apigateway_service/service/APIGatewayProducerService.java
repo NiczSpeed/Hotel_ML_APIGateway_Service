@@ -85,6 +85,17 @@ public class APIGatewayProducerService {
         }
     }
 
+    public ResponseEntity<String> resetPasswordRequestMessage(String message) {
+        String messageId = UUID.randomUUID().toString();
+        String messageWithId = attachMessageId(message, messageId);
+        kafkaTemplate.send("reset_password_request_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        try {
+            return new ResponseEntity<>("Request was send!", HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     public ResponseEntity<String> logoutUser(HttpServletRequest request) {
         try {
             if (SecurityContextHolder.getContext().getAuthentication() != null) {

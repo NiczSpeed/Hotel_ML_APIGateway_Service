@@ -32,6 +32,11 @@ public class APIGatewayUserController {
         return apiGatewayProducerService.loginUserMessage(message);
     }
 
+    @PostMapping("/resetPasswordRequest")
+    public ResponseEntity<String> resetPassword(@RequestBody String message) {
+        return apiGatewayProducerService.resetPasswordRequestMessage(message);
+    }
+
     @GetMapping("/logout")
     public ResponseEntity<String> logoutUser(HttpServletRequest request) {
         return apiGatewayProducerService.logoutUser(request);

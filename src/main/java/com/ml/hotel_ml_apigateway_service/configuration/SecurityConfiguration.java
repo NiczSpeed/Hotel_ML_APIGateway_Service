@@ -28,6 +28,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/user/login").permitAll()
                         .requestMatchers("/user/register").permitAll()
+                        .requestMatchers("user/resetPasswordRequest").permitAll()
                         .requestMatchers("/user/info").hasRole("USER")
                         .requestMatchers("/admin/info").hasRole("ADMIN")
                         .requestMatchers("/hotel/create").hasRole("ADMIN")
