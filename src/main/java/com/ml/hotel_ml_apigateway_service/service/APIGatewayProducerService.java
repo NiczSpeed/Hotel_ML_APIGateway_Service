@@ -124,6 +124,7 @@ public class APIGatewayProducerService {
         String messageId = UUID.randomUUID().toString();
         responseFutures.put(messageId, responseFuture);
         String messageWithId = attachMessageId(message, messageId);
+        logger.severe(messageWithId);
         kafkaTemplate.send("create_hotel_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
@@ -177,7 +178,7 @@ public class APIGatewayProducerService {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
-            return new ResponseEntity<>(message, HttpStatus.CREATED);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -205,7 +206,7 @@ public class APIGatewayProducerService {
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             } else {
                 response = removeMessageIdFromMessage(response);
-                response = new StringBuilder(response).delete((response.length() - 4 ) ,response.length()-1).toString().replaceAll("\\\\", "");
+                response = new StringBuilder(response).delete((response.length() - 4 ) ,response.length()-1).toString().replaceAll("\\\\", ""); // jak jest pusta lista to wyrzuca blad musze tutaj to lepiej obsluzyc
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
 
@@ -231,6 +232,11 @@ public class APIGatewayProducerService {
 
     @KafkaListener(topics = "jwt_topic", groupId = "hotel_ml_apigateway_service")
     public void earnJwtToken(String message) {
+        getRequestMessage(decodeMessage(message));
+    }
+
+    @KafkaListener(topics = "response_create_reservation_topic", groupId = "hotel_ml_apigateway_service")
+    public void earnReservationRequest(String message) {
         getRequestMessage(decodeMessage(message));
     }
 
