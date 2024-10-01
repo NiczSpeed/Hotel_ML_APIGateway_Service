@@ -5,8 +5,20 @@ networks:
     driver: bridge
 
 services:
-  postgres:
-    container_name: postgres
+  HotelMLAPIDB:
+    container_name: HotelMLAPIDB
+    image: 'postgres:16.2'
+    environment:
+      - 'POSTGRES_DB=HotelMLAPIDB'
+      - 'POSTGRES_PASSWORD=secret'
+      - 'POSTGRES_USER=root'
+    ports:
+      - '5433:5432'
+    networks:
+      - hotel-ml-net
+
+  HotelMLAuthDB:
+    container_name: HotelMLAuthDB
     image: 'postgres:16.2'
     environment:
       - 'POSTGRES_DB=HotelMLAuthDB'
@@ -16,6 +28,32 @@ services:
       - '5432:5432'
     networks:
       - hotel-ml-net
+
+  HotelMLReservationDB:
+    container_name: HotelMLReservationDB
+    image: 'postgres:16.2'
+    environment:
+      - 'POSTGRES_DB=HotelMLReservationDB'
+      - 'POSTGRES_PASSWORD=secret'
+      - 'POSTGRES_USER=root'
+    ports:
+      - '5434:5432'
+    networks:
+      - hotel-ml-net
+
+  HotelMLRoomsAndHotelsDB:
+    container_name: HotelMLRoomsAndHotelsDB
+    image: 'postgres:16.2'
+    environment:
+      - 'POSTGRES_DB=HotelMLRooms&HotelsDB'
+      - 'POSTGRES_PASSWORD=secret'
+      - 'POSTGRES_USER=root'
+    ports:
+      - '5435:5432'
+    networks:
+      - hotel-ml-net
+
+
 
   pgadmin:
     container_name: pgadmin
@@ -38,7 +76,7 @@ services:
     networks:
       - hotel-ml-net
     ports:
-      - "8081:8081"
+      - "7097:7097"
 
   hotel_ml_auth_service:
     image: hotel_ml_auth_service
@@ -55,9 +93,9 @@ services:
       - spring.datasource.username=root
       - spring.datasource.password=secret
     ports:
-      - "8082:8082"
+      - "7098:7098"
     depends_on:
-      - postgres
+      - HotelMLAuthDB
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
