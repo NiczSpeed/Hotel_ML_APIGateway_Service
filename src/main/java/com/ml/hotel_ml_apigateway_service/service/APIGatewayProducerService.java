@@ -50,7 +50,7 @@ public class APIGatewayProducerService {
         JSONObject json = new JSONObject(message);
         String email = json.getString("email");
         if (!email.contains("@")) {
-            return new ResponseEntity<>(validateFieldsFromJson(json, "Something is wrong with email address!", messageId), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(validateFieldsFromJson("Something is wrong with email address!", messageId), HttpStatus.BAD_REQUEST);
         }
         kafkaTemplate.send("register_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
         try {
@@ -184,17 +184,17 @@ public class APIGatewayProducerService {
         }
     }
 
-    public ResponseEntity<String> getFreeHotelsSet(String message) {
+    public ResponseEntity<String> getFreeHotelsSet(String city, LocalDate startDate, LocalDate endDate) {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         String messageId = UUID.randomUUID().toString();
         responseFutures.put(messageId, responseFuture);
-        String messageWithId = attachMessageId(message, messageId);
-        JSONObject json = new JSONObject(message);
-
-        LocalDate startDate = LocalDate.parse(json.optString("startDate"));
-        LocalDate endDate = LocalDate.parse(json.optString("endDate"));
+        JSONObject jsonMessage = new JSONObject();
+        jsonMessage.put("city", city);
+        jsonMessage.put("startDate", startDate);
+        jsonMessage.put("endDate", endDate);
+        String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
         if (startDate.isAfter(endDate)) {
-            return new ResponseEntity<>(validateFieldsFromJson(json, "Starting date can't be after ending date!", messageId), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(validateFieldsFromJson( "Starting date can't be after ending date!", messageId), HttpStatus.BAD_REQUEST);
         }
 
         kafkaTemplate.send("request_free_hotels_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
@@ -261,6 +261,32 @@ public class APIGatewayProducerService {
         }
     }
 
+    public ResponseEntity<String> getAllUserReservations() {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String messageId = UUID.randomUUID().toString();
+        responseFutures.put(messageId, responseFuture);
+        JSONObject jsonMessage = new JSONObject();
+        jsonMessage.put("email", authentication.getName());
+        String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
+        kafkaTemplate.send("all_user_reservation_request_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        try {
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            } else {
+
+                response = response.replaceAll("\\\\", "");
+
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private String getAuthenticatedUser() {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
@@ -306,6 +332,12 @@ public class APIGatewayProducerService {
         getRequestMessage(decodeMessage(message));
     }
 
+    @KafkaListener(topics = "all_user_reservation_response_topic", groupId = "hotel_ml_apigateway_service")
+    public void earnAllUserReservations(String message) {
+        getRequestMessage(decodeMessage(message));
+    }
+
+
 
     String decodeMessage(String message) {
         byte[] decodedBytes = Base64.getDecoder().decode(message);
@@ -335,8 +367,8 @@ public class APIGatewayProducerService {
         return new StringBuilder(message).delete(1, 65).toString();
     }
 
-    String validateFieldsFromJson(JSONObject json, String message, String messageId) {
-        json.clear();
+    String validateFieldsFromJson(String message, String messageId) {
+        JSONObject json = new JSONObject();
         json.put("messageId", messageId);
         json.put("message", message);
         return json.toString();

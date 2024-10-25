@@ -3,10 +3,7 @@ package com.ml.hotel_ml_apigateway_service.controller;
 import com.ml.hotel_ml_apigateway_service.service.APIGatewayProducerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/reservation")
@@ -22,6 +19,11 @@ public class APIGatewayReservationController {
     @PostMapping("/create")
     public ResponseEntity<String> registerUser(@RequestBody String message) {
         return apiGatewayProducerService.createReservationMessage(message);
+    }
+
+    @GetMapping("/user")
+    public ResponseEntity<String> getAllUserReservations(){
+        return apiGatewayProducerService.getAllUserReservations();
     }
 
 }

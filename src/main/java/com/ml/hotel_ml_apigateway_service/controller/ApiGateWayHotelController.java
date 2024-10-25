@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+
 @RestController
 @RequestMapping("/hotel")
 public class ApiGateWayHotelController {
@@ -23,9 +25,9 @@ public class ApiGateWayHotelController {
         return apiGatewayProducerService.createHotelMessage(message);
     }
 
-    @GetMapping("/free")
-    public ResponseEntity<String> getFreeHotels(@RequestBody String message) {
-        return apiGatewayProducerService.getFreeHotelsSet(message);
+    @GetMapping("/free/{city}/{startDate}/{endDate}")
+    public ResponseEntity<String> getFreeHotels(@PathVariable String city, @PathVariable LocalDate startDate, @PathVariable LocalDate endDate) {
+        return apiGatewayProducerService.getFreeHotelsSet(city, startDate, endDate);
     }
 
     @GetMapping("/all/{city}")
