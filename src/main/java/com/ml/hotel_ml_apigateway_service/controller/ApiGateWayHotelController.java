@@ -23,9 +23,24 @@ public class ApiGateWayHotelController {
         return apiGatewayProducerService.createHotelMessage(message);
     }
 
-    @GetMapping("/freeHotels")
+    @GetMapping("/free")
     public ResponseEntity<String> getFreeHotels(@RequestBody String message) {
         return apiGatewayProducerService.getFreeHotelsSet(message);
+    }
+
+    @GetMapping("/all/{city}")
+    public ResponseEntity<String> getAllHotels(@PathVariable String city) {
+        return apiGatewayProducerService.getAllHotels(city);
+    }
+
+//    @GetMapping("/all")
+//    public ResponseEntity<String> getAllHotels(@RequestBody String city) {
+//        return apiGatewayProducerService.getAllHotels(city);
+//    }
+
+    @GetMapping("/cities")
+    public ResponseEntity<String> getCities() {
+        return  apiGatewayProducerService.getHotelsCities();
     }
 
 }

@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.ml"
-version = "0.0.1-SNAPSHOT"
+version = "0.0.1"
 
 
 val jsonVersion = "20240303"
@@ -24,6 +24,9 @@ configurations {
         extendsFrom(configurations.annotationProcessor.get())
     }
 }
+
+
+
 
 repositories {
     mavenCentral()

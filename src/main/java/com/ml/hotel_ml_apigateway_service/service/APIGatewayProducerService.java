@@ -49,7 +49,7 @@ public class APIGatewayProducerService {
         String messageWithId = attachMessageId(message, messageId);
         JSONObject json = new JSONObject(message);
         String email = json.getString("email");
-        if(!email.contains("@")){
+        if (!email.contains("@")) {
             return new ResponseEntity<>(validateFieldsFromJson(json, "Something is wrong with email address!", messageId), HttpStatus.BAD_REQUEST);
         }
         kafkaTemplate.send("register_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
@@ -197,7 +197,7 @@ public class APIGatewayProducerService {
             return new ResponseEntity<>(validateFieldsFromJson(json, "Starting date can't be after ending date!", messageId), HttpStatus.BAD_REQUEST);
         }
 
-        kafkaTemplate.send("request_free_hotels", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        kafkaTemplate.send("request_free_hotels_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
@@ -205,11 +205,57 @@ public class APIGatewayProducerService {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             } else {
-                response = removeMessageIdFromMessage(response);
-                response = new StringBuilder(response).delete((response.length() - 4 ) ,response.length()-1).toString().replaceAll("\\\\", ""); // jak jest pusta lista to wyrzuca blad musze tutaj to lepiej obsluzyc
+
+                response = response.replaceAll("\\\\", ""); // jak jest pusta lista to wyrzuca blad musze tutaj to lepiej obsluzyc
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
 
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<String> getAllHotels(String message) {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        String messageId = UUID.randomUUID().toString();
+        responseFutures.put(messageId, responseFuture);
+        JSONObject jsonMessage = new JSONObject();
+        jsonMessage.put("city", message);
+        String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
+        kafkaTemplate.send("request_all_hotels_by_city_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        try {
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            } else {
+                response = response.replaceAll("\\\\", "");
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<String> getHotelsCities() {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        String messageId = UUID.randomUUID().toString();
+        responseFutures.put(messageId, responseFuture);
+        JSONObject message = new JSONObject().put("messageId", messageId);
+        kafkaTemplate.send("request_all_hotels_cities_topic", Base64.getEncoder().encodeToString(message.toString().getBytes()));
+        try {
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            } else {
+               
+                response = response.replaceAll("\\\\", "");
+
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -245,9 +291,18 @@ public class APIGatewayProducerService {
         getRequestMessage(decodeMessage(message));
     }
 
-    @KafkaListener(topics = "response_free_hotels", groupId = "hotel_ml_apigateway_service")
+    @KafkaListener(topics = "response_free_hotels_topic", groupId = "hotel_ml_apigateway_service")
     public void earnFreeHotelsSet(String message) {
-        logger.severe(message);
+        getRequestMessage(decodeMessage(message));
+    }
+
+    @KafkaListener(topics = "response_all_hotels_by_city_topic", groupId = "hotel_ml_apigateway_service")
+    public void earnAllHotelsByCity(String message) {
+        getRequestMessage(decodeMessage(message));
+    }
+
+    @KafkaListener(topics = "response_all_hotels_cities_topic", groupId = "hotel_ml_apigateway_service")
+    public void earnAllHotelsCities(String message) {
         getRequestMessage(decodeMessage(message));
     }
 

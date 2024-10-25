@@ -45,7 +45,7 @@ services:
     container_name: HotelMLRoomsAndHotelsDB
     image: 'postgres:16.2'
     environment:
-      - 'POSTGRES_DB=HotelMLRooms&HotelsDB'
+      - 'POSTGRES_DB=HotelMLRoomsAndHotelsDB'
       - 'POSTGRES_PASSWORD=secret'
       - 'POSTGRES_USER=root'
     ports:
@@ -68,34 +68,76 @@ services:
       - "5050:80"
 
   hotel_ml_apigateway_service:
-    image: hotel_ml_apigateway_service
     container_name: hotel_ml_apigateway_service
     build:
       context: ./
       dockerfile: Dockerfile
+    environment:
+      - spring.kafka.bootstrap-servers=broker_1:7097, broker_2:7098, broker_3:7099
+      - spring.datasource.url=jdbc:postgresql://HotelMLAPIDB:5432/HotelMLAPIDB
     networks:
       - hotel-ml-net
     ports:
-      - "7097:7097"
+      - "8081:8081"
+    depends_on:
+      - HotelMLAPIDB
+      - broker_1
+      - broker_2
+      - broker_3
 
   hotel_ml_auth_service:
-    image: hotel_ml_auth_service
     container_name: hotel_ml_auth_service
     build:
-      context: ./Hotel_ML_Auth_Service
+      context: ../Hotel_ML_Auth_Service
       dockerfile: Dockerfile
     networks:
       - hotel-ml-net
     environment:
-      - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-      - spring.jpa.hibernate.ddl-auto=update
-      - spring.datasource.url=jdbc:postgresql://localhost:5432/HotelMLAuthDB
-      - spring.datasource.username=root
-      - spring.datasource.password=secret
+      - spring.kafka.bootstrap-servers=broker_1:7097, broker_2:7098, broker_3:7099
+      - spring.datasource.url=jdbc:postgresql://HotelMLAuthDB:5432/HotelMLAuthDB
     ports:
-      - "7098:7098"
+      - "8082:8082"
     depends_on:
       - HotelMLAuthDB
+      - broker_1
+      - broker_2
+      - broker_3
+
+  hotel_ml_rooms_reservation_service:
+    container_name: hotel_ml_rooms_reservation_service
+    build:
+      context: ../Hotel_ML_Reservation_Service
+      dockerfile: Dockerfile
+    networks:
+      - hotel-ml-net
+    environment:
+      - spring.kafka.bootstrap-servers=broker_1:7097, broker_2:7098, broker_3:7099
+      - spring.datasource.url=jdbc:postgresql://HotelMLReservationDB:5432/HotelMLReservationDB
+    ports:
+      - "8083:8083"
+    depends_on:
+      - HotelMLReservationDB
+      - broker_1
+      - broker_2
+      - broker_3
+
+  hotel_ml_rooms_and_hotels_service:
+    container_name: hotel_ml_rooms_and_hotels_service
+    build:
+      context: ../Hotel_ML_Rooms_And_Hotels_Service
+      dockerfile: Dockerfile
+    networks:
+      - hotel-ml-net
+    environment:
+      - spring.kafka.bootstrap-servers=broker_1:7097, broker_2:7098, broker_3:7099
+      - spring.datasource.url=jdbc:postgresql://HotelMLRoomsAndHotelsDB:5432/HotelMLRoomsAndHotelsDB
+    ports:
+      - "8084:8084"
+    depends_on:
+      - HotelMLRoomsAndHotelsDB
+      - broker_1
+      - broker_2
+      - broker_3
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
@@ -109,6 +151,7 @@ services:
   broker_1:
     image: confluentinc/cp-kafka:7.4.0
     container_name: broker_1
+    restart: always
     networks:
       - hotel-ml-net
     ports:
@@ -119,7 +162,7 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_EXTERNAL:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_EXTERNAL://localhost:8097,PLAINTEXT_INTERNAL://broker_1:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_EXTERNAL://localhost:8097,PLAINTEXT_INTERNAL://broker_1:7097
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -128,6 +171,7 @@ services:
   broker_2:
     image: confluentinc/cp-kafka:7.4.0
     container_name: broker_2
+    restart: always
     networks:
       - hotel-ml-net
     ports:
@@ -138,7 +182,7 @@ services:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_EXTERNAL:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_EXTERNAL://localhost:8098,PLAINTEXT_INTERNAL://broker_2:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_EXTERNAL://localhost:8098,PLAINTEXT_INTERNAL://broker_2:7098
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -147,6 +191,7 @@ services:
   broker_3:
     image: confluentinc/cp-kafka:7.4.0
     container_name: broker_3
+    restart: always
     networks:
       - hotel-ml-net
     ports:
@@ -157,7 +202,7 @@ services:
       KAFKA_BROKER_ID: 3
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_EXTERNAL:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_EXTERNAL://localhost:8099,PLAINTEXT_INTERNAL://broker_3:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_EXTERNAL://localhost:8099,PLAINTEXT_INTERNAL://broker_3:7099
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
