@@ -53,8 +53,6 @@ services:
     networks:
       - hotel-ml-net
 
-
-
   pgadmin:
     container_name: pgadmin
     image: dpage/pgadmin4
@@ -211,13 +209,13 @@ services:
   kafdrop:
     image: obsidiandynamics/kafdrop
     container_name: kafdrop
-    restart: "no"
+    restart: always
     networks:
       - hotel-ml-net
     ports:
       - "9000:9000"
     environment:
-      KAFKA_BROKERCONNECT: broker_1:29092 broker_2:29092 broker_3:29092
+      KAFKA_BROKERCONNECT: broker_1:7097, broker_2:7098, broker_3:7099
     depends_on:
       - broker_1
       - broker_2

@@ -261,6 +261,26 @@ public class APIGatewayProducerService {
         }
     }
 
+    public ResponseEntity<String> getReservationPrice(String message) {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        String messageId = UUID.randomUUID().toString();
+        JSONObject json = new JSONObject(message);
+        responseFutures.put(messageId, responseFuture);
+        String messageWithId = attachMessageId(json.toString(), messageId);
+        kafkaTemplate.send("check_room_reservation_price_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        try {
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            }
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     public ResponseEntity<String> getAllUserReservations() {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -334,6 +354,11 @@ public class APIGatewayProducerService {
 
     @KafkaListener(topics = "all_user_reservation_response_topic", groupId = "hotel_ml_apigateway_service")
     public void earnAllUserReservations(String message) {
+        getRequestMessage(decodeMessage(message));
+    }
+
+    @KafkaListener(topics = "room_price_topic", groupId = "hotel_ml_apigateway_service")
+    public void earnReservationPrice(String message) {
         getRequestMessage(decodeMessage(message));
     }
 

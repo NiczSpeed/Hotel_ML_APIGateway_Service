@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+
 @RestController
 @RequestMapping("/reservation")
 public class APIGatewayReservationController {
@@ -24,6 +26,11 @@ public class APIGatewayReservationController {
     @GetMapping("/user")
     public ResponseEntity<String> getAllUserReservations(){
         return apiGatewayProducerService.getAllUserReservations();
+    }
+
+    @PostMapping("/price")
+    public ResponseEntity<String> getReservationsPrice(@RequestBody String message){
+        return apiGatewayProducerService.getReservationPrice(message);
     }
 
 }
