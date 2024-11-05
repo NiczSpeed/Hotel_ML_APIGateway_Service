@@ -28,7 +28,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/user/login").permitAll()
                         .requestMatchers("/user/register").permitAll()
-                        .requestMatchers("/admin/info").hasRole("ADMIN")
+                        .requestMatchers("/admin/*").hasRole("ADMIN")
                         .requestMatchers("/hotel/create").hasRole("ADMIN")
                         .requestMatchers("/room/create").hasRole("ADMIN")
                         .anyRequest().authenticated())

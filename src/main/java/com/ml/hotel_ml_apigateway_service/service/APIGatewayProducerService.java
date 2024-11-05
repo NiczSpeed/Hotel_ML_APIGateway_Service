@@ -60,7 +60,7 @@ public class APIGatewayProducerService {
             if (response.contains("User already Exist!")) {
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
-            return new ResponseEntity<>(message, HttpStatus.CREATED);
+            return new ResponseEntity<>(messageWithId, HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -119,12 +119,34 @@ public class APIGatewayProducerService {
         }
     }
 
+    public ResponseEntity<String> grantAdminMessage(String message) {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        String messageId = UUID.randomUUID().toString();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        JSONObject json = new JSONObject(message);
+        json.put("grantorEmail", authentication.getName());
+        responseFutures.put(messageId, responseFuture);
+        String messageWithId = attachMessageId(json.toString(), messageId);
+        kafkaTemplate.send("grant_admin_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        try {
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            } else {
+                return new ResponseEntity<>(messageWithId, HttpStatus.OK);
+            }
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     public ResponseEntity<String> createHotelMessage(String message) {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         String messageId = UUID.randomUUID().toString();
         responseFutures.put(messageId, responseFuture);
         String messageWithId = attachMessageId(message, messageId);
-        logger.severe(messageWithId);
         kafkaTemplate.send("create_hotel_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
@@ -134,7 +156,7 @@ public class APIGatewayProducerService {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
-            return new ResponseEntity<>(message, HttpStatus.CREATED);
+            return new ResponseEntity<>(messageWithId, HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while adding new hotel!", HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -275,7 +297,7 @@ public class APIGatewayProducerService {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
-            return new ResponseEntity<>(response, HttpStatus.CREATED);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
         }
