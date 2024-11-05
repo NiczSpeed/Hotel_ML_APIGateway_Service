@@ -60,7 +60,7 @@ public class APIGatewayProducerService {
             if (response.contains("User already Exist!")) {
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
-            return new ResponseEntity<>(messageWithId, HttpStatus.CREATED);
+            return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -112,7 +112,7 @@ public class APIGatewayProducerService {
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
-            response = new StringBuilder(removeMessageIdFromMessage(response)).reverse().delete(0, 2).reverse().toString().replaceAll("\\\\", "");
+            response = response.replaceAll("\\\\", "");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -135,7 +135,7 @@ public class APIGatewayProducerService {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             } else {
-                return new ResponseEntity<>(messageWithId, HttpStatus.OK);
+                return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.OK);
             }
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -216,7 +216,7 @@ public class APIGatewayProducerService {
         jsonMessage.put("endDate", endDate);
         String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
         if (startDate.isAfter(endDate)) {
-            return new ResponseEntity<>(validateFieldsFromJson( "Starting date can't be after ending date!", messageId), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(validateFieldsFromJson("Starting date can't be after ending date!", messageId), HttpStatus.BAD_REQUEST);
         }
 
         kafkaTemplate.send("request_free_hotels_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
@@ -227,7 +227,6 @@ public class APIGatewayProducerService {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             } else {
-
                 response = response.replaceAll("\\\\", ""); // jak jest pusta lista to wyrzuca blad musze tutaj to lepiej obsluzyc
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
@@ -273,7 +272,7 @@ public class APIGatewayProducerService {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             } else {
-               
+
                 response = response.replaceAll("\\\\", "");
 
                 return new ResponseEntity<>(response, HttpStatus.OK);
@@ -385,13 +384,12 @@ public class APIGatewayProducerService {
     }
 
 
-
-    String decodeMessage(String message) {
+    private String decodeMessage(String message) {
         byte[] decodedBytes = Base64.getDecoder().decode(message);
         return new String(decodedBytes);
     }
 
-    void getRequestMessage(String message) {
+    private void getRequestMessage(String message) {
         String messageId = extractMessageId(message);
         CompletableFuture<String> responseFuture = responseFutures.get(messageId);
         if (responseFuture != null) {
@@ -399,22 +397,32 @@ public class APIGatewayProducerService {
         }
     }
 
-    String attachMessageId(String message, String messageId) {
+    private String attachMessageId(String message, String messageId) {
         JSONObject json = new JSONObject(message);
         json.put("messageId", messageId);
         return json.toString();
     }
 
-    String extractMessageId(String message) {
+    private String responseMessage(String message) {
+        JSONObject newJson = new JSONObject();
+        JSONObject messageJson = new JSONObject(message);
+        String messageId = messageJson.getString("messageId");
+        messageJson.remove("messageId");
+        newJson.put("message", messageJson);
+        newJson.put("messageId", messageId);
+        return newJson.toString();
+    }
+
+    private String extractMessageId(String message) {
         JSONObject json = new JSONObject(message);
         return json.optString("messageId");
     }
 
-    String removeMessageIdFromMessage(String message) {
+    private String removeMessageIdFromMessage(String message) {
         return new StringBuilder(message).delete(1, 65).toString();
     }
 
-    String validateFieldsFromJson(String message, String messageId) {
+    private String validateFieldsFromJson(String message, String messageId) {
         JSONObject json = new JSONObject();
         json.put("messageId", messageId);
         json.put("message", message);
