@@ -156,7 +156,7 @@ public class APIGatewayProducerService {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
-            return new ResponseEntity<>(messageWithId, HttpStatus.CREATED);
+            return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while adding new hotel!", HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -176,7 +176,7 @@ public class APIGatewayProducerService {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
-            return new ResponseEntity<>(message, HttpStatus.CREATED);
+            return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -200,7 +200,7 @@ public class APIGatewayProducerService {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
-            return new ResponseEntity<>(response, HttpStatus.CREATED);
+            return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
         }

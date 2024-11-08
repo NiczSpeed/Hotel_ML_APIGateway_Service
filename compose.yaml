@@ -129,6 +129,7 @@ services:
     environment:
       - spring.kafka.bootstrap-servers=broker_1:7097, broker_2:7098, broker_3:7099
       - spring.datasource.url=jdbc:postgresql://HotelMLRoomsAndHotelsDB:5432/HotelMLRoomsAndHotelsDB
+    env_file: ../Hotel_ML_Rooms_And_Hotels_Service/.env
     ports:
       - "8084:8084"
     depends_on:
