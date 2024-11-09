@@ -13,6 +13,7 @@ val jwtVersion = "0.12.5"
 val mapstructVersion = "1.5.5.Final"
 val springSecurityVersion = "6.3.1"
 val springStarterWebVersion = "3.3.2"
+val jacksonVersion = "2.17.2"
 
 
 java {
@@ -40,6 +41,10 @@ dependencies {
     implementation("org.springframework.security:spring-security-core:${springSecurityVersion}")
     implementation("org.springframework.boot:spring-boot-starter-web:${springStarterWebVersion}")
     implementation("org.json:json:${jsonVersion}")
+    implementation ("com.fasterxml.jackson.core:jackson-core:${jacksonVersion}")
+    implementation ("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
+    implementation ("com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}")
+    implementation ("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}")
     implementation("io.jsonwebtoken:jjwt-api:${jwtVersion}")
     implementation("io.jsonwebtoken:jjwt-impl:${jwtVersion}")
     implementation("io.jsonwebtoken:jjwt-jackson:${jwtVersion}")

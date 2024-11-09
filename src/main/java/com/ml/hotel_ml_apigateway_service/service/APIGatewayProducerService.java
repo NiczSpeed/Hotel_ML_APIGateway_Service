@@ -2,15 +2,20 @@ package com.ml.hotel_ml_apigateway_service.service;
 
 
 import com.ml.hotel_ml_apigateway_service.dto.DeprecatedTokenDto;
+import com.ml.hotel_ml_apigateway_service.exceptions.ErrorWhileEncodeException;
 import com.ml.hotel_ml_apigateway_service.mapper.DeprecatedTokenMapper;
 import com.ml.hotel_ml_apigateway_service.repository.DeprecatedTokenRepository;
+import com.ml.hotel_ml_apigateway_service.utils.EncryptorUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -35,11 +40,13 @@ public class APIGatewayProducerService {
     Logger logger = Logger.getLogger(getClass().getName());
 
     private final DeprecatedTokenRepository deprecatedTokenRepository;
+    private final EncryptorUtil encryptorUtil;
 
 
-    public APIGatewayProducerService(@Qualifier("kafkaTemplate") KafkaTemplate kafkaTemplate, DeprecatedTokenRepository deprecatedTokenRepository) {
+    public APIGatewayProducerService(@Qualifier("kafkaTemplate") KafkaTemplate kafkaTemplate, DeprecatedTokenRepository deprecatedTokenRepository, EncryptorUtil encryptorUtil) {
         this.kafkaTemplate = kafkaTemplate;
         this.deprecatedTokenRepository = deprecatedTokenRepository;
+        this.encryptorUtil = encryptorUtil;
     }
 
     public ResponseEntity<String> registerUserMessage(String message) {
@@ -146,8 +153,9 @@ public class APIGatewayProducerService {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         String messageId = UUID.randomUUID().toString();
         responseFutures.put(messageId, responseFuture);
+        JSONObject jsonMessage = new JSONObject(message);
         String messageWithId = attachMessageId(message, messageId);
-        kafkaTemplate.send("create_hotel_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        sendEncodedMessage(jsonMessage.toString(), messageId, "create_hotel_topic");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
@@ -166,8 +174,9 @@ public class APIGatewayProducerService {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         String messageId = UUID.randomUUID().toString();
         responseFutures.put(messageId, responseFuture);
+        JSONObject jsonMessage = new JSONObject(message);
         String messageWithId = attachMessageId(message, messageId);
-        kafkaTemplate.send("create_room_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        sendEncodedMessage(jsonMessage.toString(), messageId, "create_room_topic");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
@@ -214,12 +223,10 @@ public class APIGatewayProducerService {
         jsonMessage.put("city", city);
         jsonMessage.put("startDate", startDate);
         jsonMessage.put("endDate", endDate);
-        String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
         if (startDate.isAfter(endDate)) {
             return new ResponseEntity<>(validateFieldsFromJson("Starting date can't be after ending date!", messageId), HttpStatus.BAD_REQUEST);
         }
-
-        kafkaTemplate.send("request_free_hotels_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        sendEncodedMessage(jsonMessage.toString(), messageId, "request_free_hotels_topic");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
@@ -242,8 +249,7 @@ public class APIGatewayProducerService {
         responseFutures.put(messageId, responseFuture);
         JSONObject jsonMessage = new JSONObject();
         jsonMessage.put("city", message);
-        String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
-        kafkaTemplate.send("request_all_hotels_by_city_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        sendEncodedMessage(jsonMessage.toString(), messageId, "request_all_hotels_by_city_topic");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
@@ -263,8 +269,7 @@ public class APIGatewayProducerService {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         String messageId = UUID.randomUUID().toString();
         responseFutures.put(messageId, responseFuture);
-        JSONObject message = new JSONObject().put("messageId", messageId);
-        kafkaTemplate.send("request_all_hotels_cities_topic", Base64.getEncoder().encodeToString(message.toString().getBytes()));
+        sendEncodedMessage(null, messageId, "request_all_hotels_cities_topic");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
@@ -285,10 +290,10 @@ public class APIGatewayProducerService {
     public ResponseEntity<String> getReservationPrice(String message) {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         String messageId = UUID.randomUUID().toString();
-        JSONObject json = new JSONObject(message);
+        JSONObject jsonMessage = new JSONObject(message);
         responseFutures.put(messageId, responseFuture);
-        String messageWithId = attachMessageId(json.toString(), messageId);
-        kafkaTemplate.send("check_room_reservation_price_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        sendEncodedMessage(jsonMessage.toString(), messageId, "check_room_reservation_price_topic");
+//        kafkaTemplate.send("check_room_reservation_price_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
@@ -332,7 +337,6 @@ public class APIGatewayProducerService {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
-
     @KafkaListener(topics = "error_request_topic", groupId = "hotel_ml_apigateway_service")
     private void registerError(String message) {
         getRequestMessage(message);
@@ -360,17 +364,29 @@ public class APIGatewayProducerService {
 
     @KafkaListener(topics = "response_free_hotels_topic", groupId = "hotel_ml_apigateway_service")
     public void earnFreeHotelsSet(String message) {
-        getRequestMessage(decodeMessage(message));
+        try {
+            getRequestMessage(encryptorUtil.decrypt(message));
+        } catch (Exception e) {
+            throw new ErrorWhileEncodeException();
+        }
     }
 
     @KafkaListener(topics = "response_all_hotels_by_city_topic", groupId = "hotel_ml_apigateway_service")
     public void earnAllHotelsByCity(String message) {
-        getRequestMessage(decodeMessage(message));
+        try {
+            getRequestMessage(encryptorUtil.decrypt(message));
+        } catch (Exception e) {
+            throw new ErrorWhileEncodeException();
+        }
     }
 
     @KafkaListener(topics = "response_all_hotels_cities_topic", groupId = "hotel_ml_apigateway_service")
     public void earnAllHotelsCities(String message) {
-        getRequestMessage(decodeMessage(message));
+        try {
+            getRequestMessage(encryptorUtil.decrypt(message));
+        } catch (Exception e) {
+            throw new ErrorWhileEncodeException();
+        }
     }
 
     @KafkaListener(topics = "all_user_reservation_response_topic", groupId = "hotel_ml_apigateway_service")
@@ -380,9 +396,36 @@ public class APIGatewayProducerService {
 
     @KafkaListener(topics = "room_price_topic", groupId = "hotel_ml_apigateway_service")
     public void earnReservationPrice(String message) {
-        getRequestMessage(decodeMessage(message));
+        try {
+            getRequestMessage(encryptorUtil.decrypt(message));
+        } catch (Exception e) {
+            throw new ErrorWhileEncodeException();
+        }
     }
 
+    private String sendEncodedMessage(String message, String messageId, String topic) {
+        try {
+            JSONObject json = new JSONObject();
+            json.put("messageId", messageId);
+            if (message != null) {
+                switch (message) {
+                    case String s when s.contains("[") -> json.put("message", new JSONArray(s));
+                    case String s when s.contains("{") -> json.put("message", new JSONObject(s));
+                    default -> json.put("message", message);
+                }
+            }
+            String encodedMessage = encryptorUtil.encrypt(json.toString());
+            logger.severe(encodedMessage);
+            CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(topic, encodedMessage);
+            future.whenComplete((result, exception) -> {
+                if (exception != null) logger.severe(exception.getMessage());
+                else logger.info("Message send successfully!");
+            });
+            return message;
+        } catch (Exception e) {
+            throw new ErrorWhileEncodeException();
+        }
+    }
 
     private String decodeMessage(String message) {
         byte[] decodedBytes = Base64.getDecoder().decode(message);
@@ -418,16 +461,10 @@ public class APIGatewayProducerService {
         return json.optString("messageId");
     }
 
-    private String removeMessageIdFromMessage(String message) {
-        return new StringBuilder(message).delete(1, 65).toString();
-    }
-
     private String validateFieldsFromJson(String message, String messageId) {
         JSONObject json = new JSONObject();
         json.put("messageId", messageId);
         json.put("message", message);
         return json.toString();
     }
-
-
 }
