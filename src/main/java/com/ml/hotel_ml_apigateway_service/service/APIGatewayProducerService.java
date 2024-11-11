@@ -323,6 +323,25 @@ public class APIGatewayProducerService {
         }
     }
 
+    public ResponseEntity<String> deleteReservationByUuid(String message) {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        String messageId = UUID.randomUUID().toString();
+        JSONObject jsonMessage = new JSONObject(message);
+        responseFutures.put(messageId, responseFuture);
+        sendEncodedMessage(jsonMessage.toString(), messageId, "delete_reservation_topic");
+        try {
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            }
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private String getAuthenticatedUser() {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
