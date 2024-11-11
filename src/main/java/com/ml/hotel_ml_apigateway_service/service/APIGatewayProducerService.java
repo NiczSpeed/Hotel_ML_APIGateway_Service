@@ -59,11 +59,10 @@ public class APIGatewayProducerService {
         if (!email.contains("@")) {
             return new ResponseEntity<>(validateFieldsFromJson("Something is wrong with email address!", messageId), HttpStatus.BAD_REQUEST);
         }
-        kafkaTemplate.send("register_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        sendEncodedMessage(json.toString(), messageId, "register_topic");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
-            logger.info(response);
             if (response.contains("User already Exist!")) {
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
@@ -77,16 +76,14 @@ public class APIGatewayProducerService {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         String messageId = UUID.randomUUID().toString();
         responseFutures.put(messageId, responseFuture);
-        String messageWithId = attachMessageId(message, messageId);
-        kafkaTemplate.send("login_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        sendEncodedMessage(message, messageId, "login_topic");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
-            logger.info(response);
             if (response.contains("Invalid username or password!")) {
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
-            return new ResponseEntity<>(response, HttpStatus.CREATED);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -111,11 +108,10 @@ public class APIGatewayProducerService {
 
     public ResponseEntity<String> getUserDetails() {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
-        String message = "{email:" + getAuthenticatedUser() + "}";
+        String message = new JSONObject().put("email", getAuthenticatedUser()).toString();
         String messageId = UUID.randomUUID().toString();
         responseFutures.put(messageId, responseFuture);
-        String messageWithId = attachMessageId(message, messageId);
-        kafkaTemplate.send("user_details_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        sendEncodedMessage(message, messageId, "user_details_topic");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
@@ -130,11 +126,11 @@ public class APIGatewayProducerService {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         String messageId = UUID.randomUUID().toString();
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        JSONObject json = new JSONObject(message);
-        json.put("grantorEmail", authentication.getName());
+        JSONObject jsonMessage = new JSONObject(message);
+        jsonMessage.put("grantorEmail", authentication.getName());
         responseFutures.put(messageId, responseFuture);
-        String messageWithId = attachMessageId(json.toString(), messageId);
-        kafkaTemplate.send("grant_admin_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
+        sendEncodedMessage(jsonMessage.toString(), messageId, "grant_admin_topic");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
@@ -159,7 +155,6 @@ public class APIGatewayProducerService {
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
-            logger.info(response);
             if (response.contains("Error")) {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
@@ -180,7 +175,6 @@ public class APIGatewayProducerService {
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
-            logger.info(response);
             if (response.contains("Error")) {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
@@ -195,16 +189,14 @@ public class APIGatewayProducerService {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         String messageId = UUID.randomUUID().toString();
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        JSONObject json = new JSONObject(message);
-        json.put("clientEmail", authentication.getName());
+        JSONObject jsonMessage = new JSONObject(message);
+        jsonMessage.put("clientEmail", authentication.getName());
         responseFutures.put(messageId, responseFuture);
-        String messageWithId = attachMessageId(json.toString(), messageId);
-        kafkaTemplate.send("create_reservation_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
+        sendEncodedMessage(jsonMessage.toString(), messageId, "create_reservation_topic");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
-            logger.info(response);
             if (response.contains("Error")) {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
@@ -293,7 +285,6 @@ public class APIGatewayProducerService {
         JSONObject jsonMessage = new JSONObject(message);
         responseFutures.put(messageId, responseFuture);
         sendEncodedMessage(jsonMessage.toString(), messageId, "check_room_reservation_price_topic");
-//        kafkaTemplate.send("check_room_reservation_price_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
@@ -314,8 +305,7 @@ public class APIGatewayProducerService {
         responseFutures.put(messageId, responseFuture);
         JSONObject jsonMessage = new JSONObject();
         jsonMessage.put("email", authentication.getName());
-        String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
-        kafkaTemplate.send("all_user_reservation_request_topic", Base64.getEncoder().encodeToString(messageWithId.getBytes()));
+        sendEncodedMessage(jsonMessage.toString(), messageId, "all_user_reservation_request_topic");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
@@ -349,17 +339,29 @@ public class APIGatewayProducerService {
 
     @KafkaListener(topics = "jwt_topic", groupId = "hotel_ml_apigateway_service")
     public void earnJwtToken(String message) {
-        getRequestMessage(decodeMessage(message));
+        try {
+            getRequestMessage(encryptorUtil.decrypt(message));
+        } catch (Exception e) {
+            throw new ErrorWhileEncodeException();
+        }
     }
 
     @KafkaListener(topics = "response_create_reservation_topic", groupId = "hotel_ml_apigateway_service")
     public void earnReservationRequest(String message) {
-        getRequestMessage(decodeMessage(message));
+        try {
+            getRequestMessage(encryptorUtil.decrypt(message));
+        } catch (Exception e) {
+            throw new ErrorWhileEncodeException();
+        }
     }
 
     @KafkaListener(topics = "user_details_request_topic", groupId = "hotel_ml_apigateway_service")
     public void earnUserDetails(String message) {
-        getRequestMessage(decodeMessage(message));
+        try {
+            getRequestMessage(encryptorUtil.decrypt(message));
+        } catch (Exception e) {
+            throw new ErrorWhileEncodeException();
+        }
     }
 
     @KafkaListener(topics = "response_free_hotels_topic", groupId = "hotel_ml_apigateway_service")
@@ -391,7 +393,11 @@ public class APIGatewayProducerService {
 
     @KafkaListener(topics = "all_user_reservation_response_topic", groupId = "hotel_ml_apigateway_service")
     public void earnAllUserReservations(String message) {
-        getRequestMessage(decodeMessage(message));
+        try {
+            getRequestMessage(encryptorUtil.decrypt(message));
+        } catch (Exception e) {
+            throw new ErrorWhileEncodeException();
+        }
     }
 
     @KafkaListener(topics = "room_price_topic", groupId = "hotel_ml_apigateway_service")
@@ -403,7 +409,7 @@ public class APIGatewayProducerService {
         }
     }
 
-    private String sendEncodedMessage(String message, String messageId, String topic) {
+    private void sendEncodedMessage(String message, String messageId, String topic) {
         try {
             JSONObject json = new JSONObject();
             json.put("messageId", messageId);
@@ -415,13 +421,11 @@ public class APIGatewayProducerService {
                 }
             }
             String encodedMessage = encryptorUtil.encrypt(json.toString());
-            logger.severe(encodedMessage);
             CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(topic, encodedMessage);
             future.whenComplete((result, exception) -> {
                 if (exception != null) logger.severe(exception.getMessage());
                 else logger.info("Message send successfully!");
             });
-            return message;
         } catch (Exception e) {
             throw new ErrorWhileEncodeException();
         }
