@@ -70,11 +70,12 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
+    networks:
+      - hotel-ml-net
     environment:
       - spring.kafka.bootstrap-servers=broker_1:7097, broker_2:7098, broker_3:7099
       - spring.datasource.url=jdbc:postgresql://HotelMLAPIDB:5432/HotelMLAPIDB
-    networks:
-      - hotel-ml-net
+    env_file: ../Hotel_ML_APIGateway_Service/.env
     ports:
       - "8081:8081"
     depends_on:
@@ -93,6 +94,7 @@ services:
     environment:
       - spring.kafka.bootstrap-servers=broker_1:7097, broker_2:7098, broker_3:7099
       - spring.datasource.url=jdbc:postgresql://HotelMLAuthDB:5432/HotelMLAuthDB
+    env_file: ../Hotel_ML_Auth_Service/.env
     ports:
       - "8082:8082"
     depends_on:
@@ -111,6 +113,7 @@ services:
     environment:
       - spring.kafka.bootstrap-servers=broker_1:7097, broker_2:7098, broker_3:7099
       - spring.datasource.url=jdbc:postgresql://HotelMLReservationDB:5432/HotelMLReservationDB
+    env_file: ../Hotel_ML_Reservation_Service/.env
     ports:
       - "8083:8083"
     depends_on:

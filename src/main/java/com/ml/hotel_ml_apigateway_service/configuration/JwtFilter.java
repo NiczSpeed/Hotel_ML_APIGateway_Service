@@ -11,6 +11,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,11 +30,15 @@ public class JwtFilter extends OncePerRequestFilter {
 
     Logger logger = Logger.getLogger(getClass().getName());
 
-    //    @Value("${security.jwt.secret.key}")
-    private String secretKey = "bUl4RGJBRm11VVlTdlZTeDRhM0pQdlBmODJCcHpxN0NtSXhEYkFGbXVVWVN2VlN4NGEzSlB2UGY4MkJwenE3Qw==";
+    private final String secretKey;
+    private final DeprecatedTokenRepository decryptedTokenRepository;
 
-    @Autowired
-    private DeprecatedTokenRepository decryptedTokenRepository;
+    public JwtFilter(
+            @Value(value = "${security.jwt.secret.key}") String secretKey,
+            DeprecatedTokenRepository decryptedTokenRepository) {
+        this.decryptedTokenRepository = decryptedTokenRepository;
+        this.secretKey = secretKey;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
