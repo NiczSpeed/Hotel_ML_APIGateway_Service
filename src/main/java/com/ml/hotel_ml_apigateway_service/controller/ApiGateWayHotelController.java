@@ -24,9 +24,9 @@ public class ApiGateWayHotelController {
         return apiGatewayProducerService.createHotelMessage(message);
     }
 
-    @GetMapping("/free/{city}/{startDate}/{endDate}")
-    public ResponseEntity<String> getFreeHotels(@PathVariable String city, @PathVariable LocalDate startDate, @PathVariable LocalDate endDate) {
-        return apiGatewayProducerService.getFreeHotelsSet(city, startDate, endDate);
+    @GetMapping("/free/{city}/{startDate}/{endDate}/{numberOfBeds}")
+    public ResponseEntity<String> getFreeHotels(@PathVariable String city, @PathVariable LocalDate startDate, @PathVariable LocalDate endDate , @PathVariable Long numberOfBeds) {
+        return apiGatewayProducerService.getFreeHotelsSet(city, startDate, endDate, numberOfBeds);
     }
 
     @GetMapping("/all/{city}")
