@@ -34,11 +34,6 @@ public class ApiGateWayHotelController {
         return apiGatewayProducerService.getAllHotels(city);
     }
 
-//    @GetMapping("/all")
-//    public ResponseEntity<String> getAllHotels(@RequestBody String city) {
-//        return apiGatewayProducerService.getAllHotels(city);
-//    }
-
     @GetMapping("/cities")
     public ResponseEntity<String> getCities() {
         return  apiGatewayProducerService.getHotelsCities();
