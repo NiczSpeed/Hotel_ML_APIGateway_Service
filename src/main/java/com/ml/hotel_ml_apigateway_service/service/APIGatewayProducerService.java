@@ -179,6 +179,8 @@ public class APIGatewayProducerService {
             }
             return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            jsonMessage.clear();
+            jsonMessage.put("message", "Timeout or Error while adding new room!");
             return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -327,10 +329,11 @@ public class APIGatewayProducerService {
         }
     }
 
-    public ResponseEntity<String> deleteReservationByUuid(String message) {
+    public ResponseEntity<String> deleteReservationByUuid(String uuid) {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         String messageId = UUID.randomUUID().toString();
-        JSONObject jsonMessage = new JSONObject(message);
+        JSONObject jsonMessage = new JSONObject();
+        jsonMessage.put("uuid", uuid);
         responseFutures.put(messageId, responseFuture);
         sendEncodedMessage(jsonMessage.toString(), messageId, "delete_reservation_topic");
         try {

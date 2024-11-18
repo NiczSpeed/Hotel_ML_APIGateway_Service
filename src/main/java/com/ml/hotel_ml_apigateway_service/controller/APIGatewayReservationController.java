@@ -33,9 +33,9 @@ public class APIGatewayReservationController {
         return apiGatewayProducerService.getReservationPrice(message);
     }
 
-    @DeleteMapping("/delete")
-    public ResponseEntity<String> deleteReservation(@RequestBody String message){
-        return apiGatewayProducerService.deleteReservationByUuid(message);
+    @DeleteMapping("/delete/{uuid}")
+    public ResponseEntity<String> deleteReservation(@PathVariable String uuid){
+        return apiGatewayProducerService.deleteReservationByUuid(uuid);
     }
 
 }
