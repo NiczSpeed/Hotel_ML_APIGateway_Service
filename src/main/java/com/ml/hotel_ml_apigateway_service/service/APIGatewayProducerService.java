@@ -33,8 +33,6 @@ public class APIGatewayProducerService {
 
     private final KafkaTemplate kafkaTemplate;
 
-    private String secretKey = "bUl4RGJBRm11VVlTdlZTeDRhM0pQdlBmODJCcHpxN0NtSXhEYkFGbXVVWVN2VlN4NGEzSlB2UGY4MkJwenE3Qw==";
-
     private final Map<String, CompletableFuture<String>> responseFutures = new ConcurrentHashMap<>();
 
     Logger logger = Logger.getLogger(getClass().getName());
@@ -181,6 +179,8 @@ public class APIGatewayProducerService {
             }
             return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            jsonMessage.clear();
+            jsonMessage.put("message", "Timeout or Error while adding new room!");
             return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -207,7 +207,7 @@ public class APIGatewayProducerService {
         }
     }
 
-    public ResponseEntity<String> getFreeHotelsSet(String city, LocalDate startDate, LocalDate endDate) {
+    public ResponseEntity<String> getFreeHotelsSet(String city, LocalDate startDate, LocalDate endDate, Long numberOfBeds) {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         String messageId = UUID.randomUUID().toString();
         responseFutures.put(messageId, responseFuture);
@@ -215,8 +215,14 @@ public class APIGatewayProducerService {
         jsonMessage.put("city", city);
         jsonMessage.put("startDate", startDate);
         jsonMessage.put("endDate", endDate);
+        jsonMessage.put("numberOfBeds", numberOfBeds);
         if (startDate.isAfter(endDate)) {
+            logger.severe("Starting date can't be after ending date!");
             return new ResponseEntity<>(validateFieldsFromJson("Starting date can't be after ending date!", messageId), HttpStatus.BAD_REQUEST);
+        }
+        if (numberOfBeds < 1) {
+            logger.severe("Number of beds can't be less than 1!");
+            return new ResponseEntity<>(validateFieldsFromJson("Number of beds can't be less than 1!", messageId), HttpStatus.BAD_REQUEST);
         }
         sendEncodedMessage(jsonMessage.toString(), messageId, "request_free_hotels_topic");
         try {
@@ -226,7 +232,7 @@ public class APIGatewayProducerService {
                 response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             } else {
-                response = response.replaceAll("\\\\", ""); // jak jest pusta lista to wyrzuca blad musze tutaj to lepiej obsluzyc
+                response = response.replaceAll("\\\\", "");
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
 
@@ -323,10 +329,11 @@ public class APIGatewayProducerService {
         }
     }
 
-    public ResponseEntity<String> deleteReservationByUuid(String message) {
+    public ResponseEntity<String> deleteReservationByUuid(String uuid) {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         String messageId = UUID.randomUUID().toString();
-        JSONObject jsonMessage = new JSONObject(message);
+        JSONObject jsonMessage = new JSONObject();
+        jsonMessage.put("uuid", uuid);
         responseFutures.put(messageId, responseFuture);
         sendEncodedMessage(jsonMessage.toString(), messageId, "delete_reservation_topic");
         try {
