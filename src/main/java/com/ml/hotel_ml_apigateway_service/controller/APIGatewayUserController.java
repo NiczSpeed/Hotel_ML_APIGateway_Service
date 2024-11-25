@@ -40,6 +40,11 @@ public class APIGatewayUserController {
         return "Welcome to Ml ApiGateWay Service: " + authentication.getName();
     }
 
+    @PatchMapping("/update")
+    public ResponseEntity<String> grantAdmin(@RequestBody String message) {
+        return apiGatewayProducerService.updateUserMessage(message);
+    }
+
     @GetMapping("/details")
     public ResponseEntity<String> userDetails() {
         return apiGatewayProducerService.getUserDetails();

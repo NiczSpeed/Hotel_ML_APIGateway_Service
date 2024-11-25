@@ -104,6 +104,33 @@ public class APIGatewayProducerService {
 
     }
 
+    public ResponseEntity<String> updateUserMessage(String message) {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        String messageId = UUID.randomUUID().toString();
+        JSONObject jsonMessage = new JSONObject(message);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        jsonMessage.put("currentEmail", authentication.getName());
+        responseFutures.put(messageId, responseFuture);
+        String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
+        sendEncodedMessage(jsonMessage.toString(), messageId, "update_user_topic");
+        try {
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+            if(message.contains("password")) {
+                jsonMessage.remove("password");
+                messageWithId = attachMessageId(jsonMessage.toString(), messageId);
+            }
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            } else {
+                return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.OK);
+            }
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     public ResponseEntity<String> getUserDetails() {
         CompletableFuture<String> responseFuture = new CompletableFuture<>();
         String message = new JSONObject().put("email", getAuthenticatedUser()).toString();
