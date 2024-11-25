@@ -65,6 +65,15 @@ services:
     ports:
       - "5050:80"
 
+  hotel_ml_front:
+    container_name: hotel_ml_front
+    build:
+      context: ../hotel_ml_front
+      dockerfile: Dockerfile
+    ports:
+      - "8080:5000"
+
+
   hotel_ml_apigateway_service:
     container_name: hotel_ml_apigateway_service
     build:
