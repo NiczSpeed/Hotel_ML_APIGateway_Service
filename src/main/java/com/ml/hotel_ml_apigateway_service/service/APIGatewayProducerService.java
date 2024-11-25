@@ -116,7 +116,7 @@ public class APIGatewayProducerService {
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
-            if(message.contains("password")) {
+            if (message.contains("password")) {
                 jsonMessage.remove("password");
                 messageWithId = attachMessageId(jsonMessage.toString(), messageId);
             }
@@ -231,6 +231,27 @@ public class APIGatewayProducerService {
             return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public ResponseEntity<String> updateReservationMessage(String message) {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        String messageId = UUID.randomUUID().toString();
+        JSONObject jsonMessage = new JSONObject(message);
+        responseFutures.put(messageId, responseFuture);
+        String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
+        sendEncodedMessage(jsonMessage.toString(), messageId, "update_reservation_topic");
+        try {
+            String response = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
+                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+            } else {
+                return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.OK);
+            }
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            return new ResponseEntity<>("Timeout or Error while updating reservation", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
