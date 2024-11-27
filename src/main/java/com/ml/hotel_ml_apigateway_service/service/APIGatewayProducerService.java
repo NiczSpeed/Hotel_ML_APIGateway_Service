@@ -61,7 +61,8 @@ public class APIGatewayProducerService {
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
-            if (response.contains("User already Exist!")) {
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
             return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.CREATED);
@@ -78,7 +79,8 @@ public class APIGatewayProducerService {
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
-            if (response.contains("Invalid username or password!")) {
+            if (response.contains("Error")) {
+                response = response.replace("Error:", "");
                 return new ResponseEntity<>(response, HttpStatus.CONFLICT);
             }
             return new ResponseEntity<>(response, HttpStatus.OK);
