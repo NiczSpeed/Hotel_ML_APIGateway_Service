@@ -10,6 +10,4 @@ public interface DeprecatedTokenMapper {
     DeprecatedTokenMapper Instance = Mappers.getMapper(DeprecatedTokenMapper.class);
 
     DeprecatedToken mapDeprecatedTokenToDeprecatedTokenDto(DeprecatedTokenDto deprecatedTokenDto);
-    DeprecatedTokenDto mapDeprecatedTokenDtoToDeprecatedToken(DeprecatedToken deprecatedToken);
-
 }
