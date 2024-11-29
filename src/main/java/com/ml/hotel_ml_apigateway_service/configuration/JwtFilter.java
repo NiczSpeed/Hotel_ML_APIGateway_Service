@@ -10,7 +10,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -41,18 +41,18 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         String header = request.getHeader("Authorization");
         if (header == null || !header.startsWith("Bearer ")) {
-            logger.info("JWT Token cannot be found!");
+            logger.severe("Error:Jwt Authorization header is invalid!");
             filterChain.doFilter(request, response);
             return;
         }
         try {
             String token = header.substring(7);
             if (checkIfTokenIsDeprecated(token)) {
-                logger.info("JWT Token cannot be found!");
+                logger.severe("Error:This token is deprecated!");
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -77,7 +77,6 @@ public class JwtFilter extends OncePerRequestFilter {
         }
         filterChain.doFilter(request, response);
     }
-
 
     private SecretKey getSecretKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
@@ -104,6 +103,4 @@ public class JwtFilter extends OncePerRequestFilter {
         }
         return false;
     }
-
-
 }

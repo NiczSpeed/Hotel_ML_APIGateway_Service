@@ -7,7 +7,6 @@ import com.ml.hotel_ml_apigateway_service.mapper.DeprecatedTokenMapper;
 import com.ml.hotel_ml_apigateway_service.repository.DeprecatedTokenRepository;
 import com.ml.hotel_ml_apigateway_service.utils.EncryptorUtil;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,7 +20,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -55,15 +53,16 @@ public class APIGatewayProducerService {
         JSONObject json = new JSONObject(message);
         String email = json.getString("email");
         if (!email.contains("@")) {
-            return new ResponseEntity<>(validateFieldsFromJson("Something is wrong with email address!", messageId), HttpStatus.BAD_REQUEST);
+            logger.severe("Error:This is not email address!");
+            return new ResponseEntity<>(validateFieldsFromJson("This is not email address!", messageId), HttpStatus.BAD_REQUEST);
         }
         sendEncodedMessage(json.toString(), messageId, "register_topic");
+        logger.info("Register request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             }
             return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
@@ -76,16 +75,16 @@ public class APIGatewayProducerService {
         String messageId = UUID.randomUUID().toString();
         responseFutures.put(messageId, responseFuture);
         sendEncodedMessage(message, messageId, "login_topic");
+        logger.info("Login request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             }
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Timeout or Error while logging", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -97,13 +96,14 @@ public class APIGatewayProducerService {
                 DeprecatedTokenDto tokenDto = new DeprecatedTokenDto();
                 tokenDto.setToken(token);
                 deprecatedTokenRepository.saveAndFlush(DeprecatedTokenMapper.Instance.mapDeprecatedTokenToDeprecatedTokenDto(tokenDto));
+                logger.info("Sucess:Logout successful.");
                 return new ResponseEntity<>("Successful logout!", HttpStatus.OK);
             }
+            logger.severe("Error:You are not logged in!");
             return new ResponseEntity<>("You are not logged in!", HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
             return new ResponseEntity<>("Authorization header not found!", HttpStatus.BAD_REQUEST);
         }
-
     }
 
     public ResponseEntity<String> updateUserMessage(String message) {
@@ -111,10 +111,13 @@ public class APIGatewayProducerService {
         String messageId = UUID.randomUUID().toString();
         JSONObject jsonMessage = new JSONObject(message);
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        jsonMessage.put("currentEmail", authentication.getName());
+        String oldEmail = authentication.getName();
+        String newEmail = jsonMessage.getString("email");
+        jsonMessage.put("currentEmail", oldEmail);
         responseFutures.put(messageId, responseFuture);
         String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
         sendEncodedMessage(jsonMessage.toString(), messageId, "update_user_topic");
+        logger.info("Update user request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
@@ -123,14 +126,38 @@ public class APIGatewayProducerService {
                 messageWithId = attachMessageId(jsonMessage.toString(), messageId);
             }
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             } else {
+                if (!oldEmail.equals(newEmail) && jsonMessage.getBoolean("userHasReservation")) {
+                    String reservationResponse = updateAllReservationsAfterEmailChange(oldEmail, newEmail);
+                    if (reservationResponse.contains("Error")) {
+                        return getErrorResponse(reservationResponse);
+                    }
+                }
                 return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.OK);
             }
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Timeout or Error while updating details", HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private String updateAllReservationsAfterEmailChange(String oldEmail, String newEmail) {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        JSONObject jsonMessage = new JSONObject();
+        String messageId = UUID.randomUUID().toString();
+        jsonMessage.put("oldEmail", oldEmail);
+        jsonMessage.put("newEmail", newEmail);
+        responseFutures.put(messageId, responseFuture);
+        sendEncodedMessage(jsonMessage.toString(), messageId, "update_all_reservation_topic");
+        logger.info("Update request was sent:Message was sent.");
+        try {
+            String reservationResponse = responseFuture.get(5, TimeUnit.SECONDS);
+            responseFutures.remove(messageId);
+           return reservationResponse;
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            logger.severe("Error:Timeout or Error while updating reservations after email change");
+        }
+        return null;
     }
 
     public ResponseEntity<String> getUserDetails() {
@@ -139,13 +166,14 @@ public class APIGatewayProducerService {
         String messageId = UUID.randomUUID().toString();
         responseFutures.put(messageId, responseFuture);
         sendEncodedMessage(message, messageId, "user_details_topic");
+        logger.info("Get user details request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             response = response.replaceAll("\\\\", "");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Timeout or Error while getting user details", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -158,17 +186,17 @@ public class APIGatewayProducerService {
         responseFutures.put(messageId, responseFuture);
         String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
         sendEncodedMessage(jsonMessage.toString(), messageId, "grant_admin_topic");
+        logger.info("Grant admin request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             } else {
                 return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.OK);
             }
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Timeout or Error while granting admin", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -179,16 +207,16 @@ public class APIGatewayProducerService {
         JSONObject jsonMessage = new JSONObject(message);
         String messageWithId = attachMessageId(message, messageId);
         sendEncodedMessage(jsonMessage.toString(), messageId, "create_hotel_topic");
+        logger.info("Create hotel request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             }
             return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            return new ResponseEntity<>("Timeout or Error while adding new hotel!", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Timeout or Error while adding new hotel", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -199,18 +227,18 @@ public class APIGatewayProducerService {
         JSONObject jsonMessage = new JSONObject(message);
         String messageWithId = attachMessageId(message, messageId);
         sendEncodedMessage(jsonMessage.toString(), messageId, "create_room_topic");
+        logger.info("Create room request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             }
             return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             jsonMessage.clear();
             jsonMessage.put("message", "Timeout or Error while adding new room!");
-            return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Timeout or Error while adding new room", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -223,16 +251,16 @@ public class APIGatewayProducerService {
         responseFutures.put(messageId, responseFuture);
         String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
         sendEncodedMessage(jsonMessage.toString(), messageId, "create_reservation_topic");
+        logger.info("Create reservation request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             }
             return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.CREATED);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Timeout or Error while creating reservation", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -243,12 +271,12 @@ public class APIGatewayProducerService {
         responseFutures.put(messageId, responseFuture);
         String messageWithId = attachMessageId(jsonMessage.toString(), messageId);
         sendEncodedMessage(jsonMessage.toString(), messageId, "update_reservation_topic");
+        logger.info("Update reservation request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             } else {
                 return new ResponseEntity<>(responseMessage(messageWithId), HttpStatus.OK);
             }
@@ -267,27 +295,27 @@ public class APIGatewayProducerService {
         jsonMessage.put("endDate", endDate);
         jsonMessage.put("numberOfBeds", numberOfBeds);
         if (startDate.isAfter(endDate)) {
-            logger.severe("Starting date can't be after ending date!");
+            logger.severe("Error:Starting date can't be after ending date!");
             return new ResponseEntity<>(validateFieldsFromJson("Starting date can't be after ending date!", messageId), HttpStatus.BAD_REQUEST);
         }
         if (numberOfBeds < 1) {
-            logger.severe("Number of beds can't be less than 1!");
+            logger.severe("Error:Number of beds can't be less than 1!");
             return new ResponseEntity<>(validateFieldsFromJson("Number of beds can't be less than 1!", messageId), HttpStatus.BAD_REQUEST);
         }
         sendEncodedMessage(jsonMessage.toString(), messageId, "request_free_hotels_topic");
+        logger.info("Get free hotels request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             } else {
                 response = response.replaceAll("\\\\", "");
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
 
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Timeout or Error while getting list of free hotels", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -298,18 +326,18 @@ public class APIGatewayProducerService {
         JSONObject jsonMessage = new JSONObject();
         jsonMessage.put("city", message);
         sendEncodedMessage(jsonMessage.toString(), messageId, "request_all_hotels_by_city_topic");
+        logger.info("Get all hotels request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             } else {
                 response = response.replaceAll("\\\\", "");
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Timeout or Error while getting list of hotels", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -318,20 +346,18 @@ public class APIGatewayProducerService {
         String messageId = UUID.randomUUID().toString();
         responseFutures.put(messageId, responseFuture);
         sendEncodedMessage(null, messageId, "request_all_hotels_cities_topic");
+        logger.info("Get all hotels cities request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             } else {
-
                 response = response.replaceAll("\\\\", "");
-
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Timeout or Error while getting lis of hotels", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -341,16 +367,16 @@ public class APIGatewayProducerService {
         JSONObject jsonMessage = new JSONObject(message);
         responseFutures.put(messageId, responseFuture);
         sendEncodedMessage(jsonMessage.toString(), messageId, "check_room_reservation_price_topic");
+        logger.info("Get reservation price request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             }
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Timeout or Error while getting reservation price", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -362,20 +388,18 @@ public class APIGatewayProducerService {
         JSONObject jsonMessage = new JSONObject();
         jsonMessage.put("email", authentication.getName());
         sendEncodedMessage(jsonMessage.toString(), messageId, "all_user_reservation_request_topic");
+        logger.info("Get all user reservations request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             } else {
-
                 response = response.replaceAll("\\\\", "");
-
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            return new ResponseEntity<>("Timeout or Error while processing registration", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Timeout or Error while getting user reservation list", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -386,16 +410,16 @@ public class APIGatewayProducerService {
         jsonMessage.put("uuid", uuid);
         responseFutures.put(messageId, responseFuture);
         sendEncodedMessage(jsonMessage.toString(), messageId, "delete_reservation_topic");
+        logger.info("Delete reservation request was sent:Message was sent.");
         try {
             String response = responseFuture.get(5, TimeUnit.SECONDS);
             responseFutures.remove(messageId);
             if (response.contains("Error")) {
-                response = response.replace("Error:", "");
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+                return getErrorResponse(response);
             }
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            return new ResponseEntity<>("Timeout or Error while adding new room!", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Timeout or Error while deleting reservation", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -500,16 +524,10 @@ public class APIGatewayProducerService {
             CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(topic, encodedMessage);
             future.whenComplete((result, exception) -> {
                 if (exception != null) logger.severe(exception.getMessage());
-                else logger.info("Message send successfully!");
             });
         } catch (Exception e) {
             throw new ErrorWhileEncodeException();
         }
-    }
-
-    private String decodeMessage(String message) {
-        byte[] decodedBytes = Base64.getDecoder().decode(message);
-        return new String(decodedBytes);
     }
 
     private void getRequestMessage(String message) {
@@ -539,6 +557,14 @@ public class APIGatewayProducerService {
     private String extractMessageId(String message) {
         JSONObject json = new JSONObject(message);
         return json.optString("messageId");
+    }
+
+    private ResponseEntity<String> getErrorResponse(String response) {
+        JSONObject errorResponseJson = new JSONObject(response);
+        errorResponseJson.remove("messageId");
+        logger.severe(errorResponseJson.getString("message"));
+        response = response.replace("Error:", "");
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
     private String validateFieldsFromJson(String message, String messageId) {
