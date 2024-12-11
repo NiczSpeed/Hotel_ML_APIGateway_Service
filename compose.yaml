@@ -6,6 +6,7 @@ networks:
 
 services:
   HotelMLAPIDB:
+    restart: always
     container_name: HotelMLAPIDB
     image: 'postgres:16.2'
     environment:
@@ -18,6 +19,7 @@ services:
       - hotel-ml-net
 
   HotelMLAuthDB:
+    restart: always
     container_name: HotelMLAuthDB
     image: 'postgres:16.2'
     environment:
@@ -30,6 +32,7 @@ services:
       - hotel-ml-net
 
   HotelMLReservationDB:
+    restart: always
     container_name: HotelMLReservationDB
     image: 'postgres:16.2'
     environment:
@@ -42,6 +45,7 @@ services:
       - hotel-ml-net
 
   HotelMLRoomsAndHotelsDB:
+    restart: always
     container_name: HotelMLRoomsAndHotelsDB
     image: 'postgres:16.2'
     environment:
@@ -66,6 +70,7 @@ services:
       - "5050:80"
 
   hotel_ml_front:
+    restart: always
     container_name: hotel_ml_front
     build:
       context: ../hotel_ml_front
@@ -76,6 +81,7 @@ services:
 
   hotel_ml_apigateway_service:
     container_name: hotel_ml_apigateway_service
+    restart: always
     build:
       context: ./
       dockerfile: Dockerfile
@@ -95,6 +101,7 @@ services:
 
   hotel_ml_auth_service:
     container_name: hotel_ml_auth_service
+    restart: always
     build:
       context: ../Hotel_ML_Auth_Service
       dockerfile: Dockerfile
@@ -114,6 +121,7 @@ services:
 
   hotel_ml_rooms_reservation_service:
     container_name: hotel_ml_rooms_reservation_service
+    restart: always
     build:
       context: ../Hotel_ML_Reservation_Service
       dockerfile: Dockerfile
@@ -133,6 +141,7 @@ services:
 
   hotel_ml_rooms_and_hotels_service:
     container_name: hotel_ml_rooms_and_hotels_service
+    restart: always
     build:
       context: ../Hotel_ML_Rooms_And_Hotels_Service
       dockerfile: Dockerfile
