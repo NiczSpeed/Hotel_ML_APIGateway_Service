@@ -1,20 +1,16 @@
 package com.ml.hotel_ml_apigateway_service.controller;
 
 import com.ml.hotel_ml_apigateway_service.service.APIGatewayProducerService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/admin")
 public class APIGatewayAdminController {
 
     private final APIGatewayProducerService apiGatewayService;
-
-    @Autowired
-    public APIGatewayAdminController(APIGatewayProducerService apiGatewayService) {
-        this.apiGatewayService = apiGatewayService;
-    }
 
     @GetMapping("/info")
     public String welcomeEndpoint() {
