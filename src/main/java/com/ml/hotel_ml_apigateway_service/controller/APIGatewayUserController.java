@@ -37,7 +37,7 @@ public class APIGatewayUserController {
     }
 
     @PatchMapping("/update")
-    public ResponseEntity<String> grantAdmin(@RequestBody String message) {
+    public ResponseEntity<String> updateUser(@RequestBody String message) {
         return apiGatewayProducerService.updateUserMessage(message);
     }
 
