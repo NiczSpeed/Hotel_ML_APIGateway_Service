@@ -31,12 +31,12 @@ public class JwtFilter extends OncePerRequestFilter {
     Logger logger = Logger.getLogger(getClass().getName());
 
     private final String secretKey;
-    private final DeprecatedTokenRepository decryptedTokenRepository;
+    private final DeprecatedTokenRepository deprecatedTokenRepository;
 
     public JwtFilter(
             @Value(value = "${security.jwt.secret.key}") String secretKey,
             DeprecatedTokenRepository deprecatedTokenRepository) {
-        this.decryptedTokenRepository = deprecatedTokenRepository;
+        this.deprecatedTokenRepository = deprecatedTokenRepository;
         this.secretKey = secretKey;
     }
 
@@ -96,7 +96,7 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     private boolean checkIfTokenIsDeprecated(String token) {
-        for (DeprecatedToken deprecatedToken : decryptedTokenRepository.findAll()) {
+        for (DeprecatedToken deprecatedToken : deprecatedTokenRepository.findAll()) {
             if (deprecatedToken.getToken().equals(token)) {
                 return true;
             }
