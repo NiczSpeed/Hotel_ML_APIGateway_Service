@@ -16,7 +16,7 @@ public class ApiGateWayRoomController {
     private final APIGatewayProducerService apiGatewayProducerService;
 
     @PostMapping("/create")
-    public ResponseEntity<String> registerUser(@RequestBody String message) {
+    public ResponseEntity<String> createRoom(@RequestBody String message) {
         return apiGatewayProducerService.createRoomMessage(message);
     }
 

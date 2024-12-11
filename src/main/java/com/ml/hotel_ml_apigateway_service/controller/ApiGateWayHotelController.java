@@ -15,7 +15,7 @@ public class ApiGateWayHotelController {
     private final APIGatewayProducerService apiGatewayProducerService;
 
     @PostMapping("/create")
-    public ResponseEntity<String> registerUser(@RequestBody String message) {
+    public ResponseEntity<String> createHotel(@RequestBody String message) {
         return apiGatewayProducerService.createHotelMessage(message);
     }
 
