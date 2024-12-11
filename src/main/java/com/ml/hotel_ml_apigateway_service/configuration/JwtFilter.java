@@ -35,8 +35,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
     public JwtFilter(
             @Value(value = "${security.jwt.secret.key}") String secretKey,
-            DeprecatedTokenRepository decryptedTokenRepository) {
-        this.decryptedTokenRepository = decryptedTokenRepository;
+            DeprecatedTokenRepository deprecatedTokenRepository) {
+        this.decryptedTokenRepository = deprecatedTokenRepository;
         this.secretKey = secretKey;
     }
 
