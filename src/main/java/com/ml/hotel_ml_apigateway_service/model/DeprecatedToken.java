@@ -17,7 +17,7 @@ public class DeprecatedToken {
     @Column(name = "uuid")
     private UUID uuid;
 
-    @Column(name = "name", length = 500)
+    @Column(name = "token", length = 500)
     @Convert(converter = StringConverter.class)
     private String token;
 
