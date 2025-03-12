@@ -9,11 +9,11 @@ Hotel_ML_APIGateway_Service is a backend microservice based on **Spring Boot**, 
 
 📌 **Key features::**
 - ✅ Sending messages to other microservices
-- ✅ Endpoint security (Spring Security)
-- ✅ JWT token authentication
-- ✅ Error handling
-- ✅ Save deprecated tokens to the database (a deprecated token is when a user logs out)
-- ✅ AES Encryption for Stored and Brokered Data
+- ✅ Securing endpoints with Spring Securit
+- ✅ Authenticating users with JWT tokens  
+- ✅ Handling errors
+- ✅ Storing deprecated tokens in the database (deprecated tokens are generated when users log out)
+- ✅ Encrypting stored and brokered data with AES 
 
 ---
 
@@ -50,14 +50,14 @@ Hotel_ML_APIGateway_Service is a backend microservice based on **Spring Boot**, 
 │   │   ├── ApiGateWayRoomController.java                       # Rooms endpoints
 │   │   ├── APIGatewayUserController.java                       # User endpoints
 │   ├── dto/                                                # DTO layer
-│   │   ├── DeprecatedTokenDto.java                             # Dto DeprecetedToken
+│   │   ├── DeprecatedTokenDto.java                             # Dto for DeprecetedToken Entity
 │   ├── exceptions/                                         # Additional exceptions of the microservices
 │   │   ├── ErrorWhileDecodeException.java                      # Exception signaling a decoding problem
 │   │   ├── ErrorWhileEncodeException.java                      # Exception signaling an encoding problem
 │   ├── mapper/                                             # Layer mapping of microservice entities and DTOs
 │   │   ├── DeprecatedTokenMapper.java                          # DeprecetedToken Mapper
 │   ├── model/                                              # Entity classes
-│   │   ├── DeprecatedToken.java                                # DeprecatedToken model
+│   │   ├── DeprecatedToken.java                                # Entity used for saving deprecated tokens
 │   ├── repository/                                         # The layer of connection of entities to the database
 │   │   ├── DeprecatedTokenRepository.java                      # DeprecatedToken repository
 │   ├── service                                             # Business logic layer
