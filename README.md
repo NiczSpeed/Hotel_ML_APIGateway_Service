@@ -13,6 +13,7 @@ Hotel_ML_APIGateway_Service is a backend microservice based on **Spring Boot**, 
 - ✅ JWT token authentication
 - ✅ Error handling
 - ✅ Save deprecated tokens to the database (a deprecated token is when a user logs out)
+- ✅ AES Encryption for Stored and Brokered Data
 
 ---
 
