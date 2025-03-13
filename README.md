@@ -99,21 +99,21 @@ These diagrams illustrate the main object-oriented structure of the application,
 #### 🛡️ Encryption Classes
 This diagram illustrates encryption classes in service
 
-🔗 [View the encryption classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_encryption.svg)
+🔗 [View the encryption classes](docs/Class/Hotel_ML_APIGateway_Service_Diagram_encryption.svg)
 
 ---
 
 #### 🚨 Exception Classes
 This diagram illustrates exception classes in service
 
-🔗 [View the exception classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_Exceptions.svg)
+🔗 [View the exception classes](docs/Class/Hotel_ML_APIGateway_Service_Diagram_Exceptions.svg)
 
 ---
 
 #### ⚙️ Configuration Classes
 This diagram ilustrates configuration classes in service
 
-🔗 [View the configuration classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_Configuration.svg)
+🔗 [View the configuration classes](docs/Class/Hotel_ML_APIGateway_Service_Diagram_Configuration.svg)
 
 ---
 
@@ -126,13 +126,13 @@ The diagram presents the concepts of Coordinator, Producer and Listener, definin
 * Producer – sends data to the appropriate services via Apache Kafka brokers.
 * Listener – listens for messages on a specific topic and forwards them for further processing.
 
-🔗 [View the message communication classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_Messages_Communication.svg)
+🔗 [View the message communication classes](docs/Class/Hotel_ML_APIGateway_Service_Diagram_Messages_Communication.svg)
 
 ---
 
 #### 💼 DeprecatedToken Business Logic Classes
 This diagram ilustrates DeprecatedToken business logic classes in service
 
-🔗 [View the DeprecatedToken business logic classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_DeprecatedToken.svg)
+🔗 [View the DeprecatedToken business logic classes](docs/Class/Hotel_ML_APIGateway_Service_Diagram_DeprecatedToken.svg)
 
 ---
