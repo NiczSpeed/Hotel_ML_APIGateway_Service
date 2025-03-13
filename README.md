@@ -1,5 +1,12 @@
 # 🔄 Hotel_ML_APIGateway_Service - Central API communication hub
 
+## 📖 Table of Contents
+1. [📌 Overview](#-overview)
+2. [🛠️ Technologies](#️-technologies)
+3. [📂 Structure of the Code](#-structure-of-the-code)
+4. [📊 Diagrams](#-diagrams)
+
+---
 ## 📌 Overview
 Hotel_ML_APIGateway_Service is a backend microservice based on **Spring Boot**, whose job is to exchange data between **hotel_ml_front** and other microservices thanks to Apache Kafka. It is also responsible for endpoint security thanks to Spring Security, authenticating JWT tokens and saving them to the database as deprecated when the user logs out.
 
@@ -73,3 +80,58 @@ Hotel_ML_APIGateway_Service is a backend microservice based on **Spring Boot**, 
 │──.env                                                 # Environment variables for the Docker container
 │── Dockerfile                                          # Docker image definition
 │── compose.yml                                         # Launching applications and dependencies
+```
+## 📊 Diagrams
+
+### 🗂️ Entity-Relationship Diagram (ERD)
+This diagram represents the relationships between entities in the database.
+
+🔗 [View the full ERD](docs/ERD/Hotel_ML_APIGateway_Service.svg)
+
+---
+
+### 🏛 Class Diagrams
+These diagrams illustrate the main object-oriented structure of the application, including entities, their attributes, methods, and relationships.
+
+---
+
+#### 🛡️ Encryption classes
+This diagram illustrates encryption classes in service
+
+🔗 [View the encryption classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_encryption.svg)
+
+---
+
+#### 🚨 Exception classes
+This diagram illustrates exception classes in service
+
+🔗 [View the exception classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_Exceptions.svg)
+
+---
+
+#### ⚙️ Configuration classes
+This diagram ilustrates configuration classes in service
+
+🔗 [View the configuration classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_Configuration.svg)
+
+---
+
+#### 💬 Message communication classes
+This diagram illustrates message communication classes in service.
+
+The diagram presents the concepts of Coordinator, Producer and Listener, defining roles in a Kafka-based and multithreaded architecture.
+
+* Coordinator – retrieves data, opens a new thread, invokes the Producer, and waits up to 5 seconds for a Consumer response.
+* Producer – sends data to the appropriate services via Apache Kafka brokers.
+* Listener – listens for messages on a specific topic and forwards them for further processing.
+
+🔗 [View the message communication classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_Messages_Communication.svg)
+
+---
+
+#### 💼 DeprecatedToken business logic classes
+This diagram ilustrates DeprecatedToken business logic classes in service
+
+🔗 [View the DeprecatedToken business logic classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_DeprecatedToken.svg)
+
+---
