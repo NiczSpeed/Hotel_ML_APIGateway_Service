@@ -10,11 +10,11 @@
 ## 📌 Overview
 Hotel_ML_APIGateway_Service is a backend microservice based on **Spring Boot**, whose job is to exchange data between **hotel_ml_front** and other microservices thanks to Apache Kafka. It is also responsible for endpoint security thanks to Spring Security, authenticating JWT tokens and saving them to the database as deprecated when the user logs out.
 
-## ❗ Important information
+## ❗ Important Information
 > To launch an application using the described service, go to:
 > ➡️ [Main README](https://github.com/NiczSpeed/HotelML?tab=readme-ov-file#%EF%B8%8F-how-to-run-the-entire-system)
 
-📌 **Key features::**
+📌 **Key Features::**
 - ✅ Sending messages to other microservices
 - ✅ Securing endpoints with Spring Securit
 - ✅ Authenticating users with JWT tokens  
@@ -96,28 +96,28 @@ These diagrams illustrate the main object-oriented structure of the application,
 
 ---
 
-#### 🛡️ Encryption classes
+#### 🛡️ Encryption Classes
 This diagram illustrates encryption classes in service
 
 🔗 [View the encryption classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_encryption.svg)
 
 ---
 
-#### 🚨 Exception classes
+#### 🚨 Exception Classes
 This diagram illustrates exception classes in service
 
 🔗 [View the exception classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_Exceptions.svg)
 
 ---
 
-#### ⚙️ Configuration classes
+#### ⚙️ Configuration Classes
 This diagram ilustrates configuration classes in service
 
 🔗 [View the configuration classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_Configuration.svg)
 
 ---
 
-#### 💬 Message communication classes
+#### 💬 Message Communication Classes
 This diagram illustrates message communication classes in service.
 
 The diagram presents the concepts of Coordinator, Producer and Listener, defining roles in a Kafka-based and multithreaded architecture.
@@ -130,7 +130,7 @@ The diagram presents the concepts of Coordinator, Producer and Listener, definin
 
 ---
 
-#### 💼 DeprecatedToken business logic classes
+#### 💼 DeprecatedToken Business Logic Classes
 This diagram ilustrates DeprecatedToken business logic classes in service
 
 🔗 [View the DeprecatedToken business logic classes](docs/Entity/Hotel_ML_APIGateway_Service_Diagram_DeprecatedToken.svg)
