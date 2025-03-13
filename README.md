@@ -14,7 +14,7 @@ Hotel_ML_APIGateway_Service is a backend microservice based on **Spring Boot**, 
 > To launch an application using the described service, go to:
 > ➡️ [Main README](https://github.com/NiczSpeed/HotelML?tab=readme-ov-file#%EF%B8%8F-how-to-run-the-entire-system)
 
-📌 **Key Features::**
+📌 **Key Features:**
 - ✅ Sending messages to other microservices
 - ✅ Securing endpoints with Spring Securit
 - ✅ Authenticating users with JWT tokens  
